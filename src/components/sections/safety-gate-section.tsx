@@ -53,21 +53,21 @@ export function SafetyGateSection() {
   ];
 
   return (
-    <section className="py-16 sm:py-24 border-t border-[#E0DBD4] dark:border-[#333330]">
+    <section id="safety-gate" className="py-20 sm:py-28 border-t border-[#E0DBD4] dark:border-[#333330]">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Section Header */}
         <div className="max-w-3xl mb-12 sm:mb-16">
           <div className="flex items-center gap-2 mb-3">
             <span className="size-2 rounded-full bg-[#15803D]" />
             <span className="text-xs uppercase font-bold tracking-widest text-[#6B6864] dark:text-[#A4A09B]">
-              Safety Gating
+              Safety Check
             </span>
           </div>
           <h2 className="text-3xl sm:text-5xl font-semibold tracking-[-0.02em] text-[#141413] dark:text-[#F4F1EE] mb-4">
-            Why this action is allowed to run.
+            Why this action is safe to run.
           </h2>
           <p className="text-base sm:text-lg text-[#6B6864] dark:text-[#A4A09B] leading-relaxed">
-            NEXORA never allows energy savings to compromise occupant comfort or building health. Every proposed action must pass five independent safety guardrails.
+            NEXORA never allows energy savings to compromise occupant comfort or building health. Every proposed action must pass five independent safety guardrails before execution.
           </p>
         </div>
 
@@ -127,7 +127,7 @@ export function SafetyGateSection() {
             </div>
 
             <div className="pt-3 border-t border-[#E0DBD4] dark:border-[#333330] text-xs font-mono text-[#6B6864] dark:text-[#A4A09B]">
-              Safety Gating Engine: Version 3.4
+              Safety Check Engine &bull; Continuous Real-Time Evaluation
             </div>
           </div>
         </div>

@@ -11,14 +11,14 @@ export function VerificationSection() {
   const activeRecord = verifications.find((v) => v.id === selectedVerId) || verifications[0];
 
   return (
-    <section id="verification" className="py-16 sm:py-24 border-t border-[#E0DBD4] dark:border-[#333330]">
+    <section id="verification" className="py-20 sm:py-28 border-t border-[#E0DBD4] dark:border-[#333330]">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Section Header */}
         <div className="max-w-3xl mb-12 sm:mb-16">
           <div className="flex items-center gap-2 mb-3">
             <span className="size-2 rounded-full bg-[#15803D]" />
             <span className="text-xs uppercase font-bold tracking-widest text-[#6B6864] dark:text-[#A4A09B]">
-              Proof of Impact
+              Verified Impact
             </span>
           </div>
           <h2 className="text-3xl sm:text-5xl font-semibold tracking-[-0.02em] text-[#141413] dark:text-[#F4F1EE] mb-4">

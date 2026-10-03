@@ -4,6 +4,7 @@ import React, { useState } from "react";
 import { Header } from "@/components/layout/header";
 import { HeroSection } from "@/components/sections/hero-section";
 import { LoopSection } from "@/components/sections/loop-section";
+import { CaseStudySection } from "@/components/sections/case-study-section";
 import { EnergySection } from "@/components/sections/energy-section";
 import { RecommendationSection } from "@/components/sections/recommendation-section";
 import { SafetyGateSection } from "@/components/sections/safety-gate-section";
@@ -34,10 +35,13 @@ export default function Home() {
         {/* Section 1: Hero — NEXORA + core message + one strong building visual */}
         <HeroSection onExploreZones={() => setIsZoneModalOpen(true)} />
 
-        {/* Section 2: Intelligence loop — SENSE → PREDICT → DECIDE → GATE → ACT → VERIFY */}
+        {/* Section 2: Intelligence loop — SENSE → UNDERSTAND → PREDICT → DECIDE → GATE → ACT → VERIFY */}
         <LoopSection />
 
-        {/* Section 3: Building/energy story — large visual/chart with minimal supporting text */}
+        {/* Section 3: Scrolling Case-Study FlipStack — SENSE → PREDICT → GATE → VERIFY */}
+        <CaseStudySection />
+
+        {/* Section 4: Building/energy story — large visual/chart with minimal supporting text */}
         <EnergySection onInspectZones={() => setIsZoneModalOpen(true)} />
 
         {/* Section 4: AI recommendation — focused interactive recommendation experience */}

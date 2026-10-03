@@ -187,8 +187,8 @@ export function RecommendationsPanel() {
               {isExpanded && (
                 <div className="mb-3.5 pt-2 border-t border-[#E0DBD4]/60 dark:border-[#333330]/60 space-y-2">
                   <div className="text-[11px] font-bold uppercase tracking-wider text-[#6B6864] dark:text-[#A4A09B] flex items-center justify-between">
-                    <span>Multi-Constraint Evaluation Gating</span>
-                    <span className="text-[10px] font-mono text-[#15803D]">Status: CLEAR TO DISPATCH</span>
+                    <span>Safety check (5/5 checks passed)</span>
+                    <span className="text-[10px] font-mono text-[#15803D]">Safe to act</span>
                   </div>
                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
                     {rec.safetyChecks.map((check, idx) => (

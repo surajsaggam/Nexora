@@ -23,21 +23,21 @@ export function EnergySection({
   const [showCooling, setShowCooling] = useState(true);
 
   return (
-    <section className="py-16 sm:py-24 border-t border-[#E0DBD4] dark:border-[#333330]">
+    <section id="energy-telemetry" className="py-20 sm:py-28 border-t border-[#E0DBD4] dark:border-[#333330]">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Section Header */}
         <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-10 sm:mb-12">
           <div className="max-w-2xl">
             <div className="flex items-center gap-2 mb-3">
-              <span className="size-2 rounded-full bg-[#1E3A8A]" />
+              <span className="size-2 rounded-full bg-[#C05621]" />
               <span className="text-xs uppercase font-bold tracking-widest text-[#6B6864] dark:text-[#A4A09B]">
-                Whole-Building Telemetry
+                Expected vs Actual
               </span>
             </div>
             <h2 className="text-3xl sm:text-5xl font-semibold tracking-[-0.02em] text-[#141413] dark:text-[#F4F1EE] mb-3">
               Energy Demand vs. What Was Expected
             </h2>
-            <p className="text-base text-[#6B6864] dark:text-[#A4A09B] leading-relaxed">
+            <p className="text-base sm:text-lg text-[#6B6864] dark:text-[#A4A09B] leading-relaxed">
               The dashed line shows what the building would have consumed under fixed operating schedules. The solid curve reveals how NEXORA curtails cooling and lighting when spaces empty out.
             </p>
           </div>

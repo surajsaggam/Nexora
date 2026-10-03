@@ -46,7 +46,7 @@ export function ControlSummarySection({
   ];
 
   return (
-    <section id="control-summary" className="py-16 sm:py-24 border-t border-[#E0DBD4] dark:border-[#333330]">
+    <section id="control-summary" className="py-20 sm:py-28 border-t border-[#E0DBD4] dark:border-[#333330]">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Section Header */}
         <div className="max-w-3xl mb-12 sm:mb-16">
