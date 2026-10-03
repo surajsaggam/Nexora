@@ -1,0 +1,110 @@
+{
+  "timestamp": "2026-08-14T23:45:00",
+  "scenario": "summer_peak",
+  "evidence": "SIMULATED",
+  "outdoor_temp_c": 30.3,
+  "gross_building_power_kw": 25.45,
+  "baseline_building_power_kw": 55.7,
+  "variance_delta_kw": -30.25,
+  "comfort_compliance_pct": 87.5,
+  "iaq_compliance_pct": 100.0,
+  "active_anomalies_count": 0,
+  "zones": {
+    "z01": {
+      "zone_name": "z01",
+      "temperature": 23.61,
+      "target_setpoint": 22.5,
+      "co2": 440.5,
+      "humidity": 46.0,
+      "occupancy": 0,
+      "total_power_kw": 5.22,
+      "has_anomaly": false,
+      "anomaly_desc": "",
+      "evidence": "SIMULATED"
+    },
+    "z02": {
+      "zone_name": "z02",
+      "temperature": 22.9,
+      "target_setpoint": 22.0,
+      "co2": 453.5,
+      "humidity": 45.8,
+      "occupancy": 0,
+      "total_power_kw": 6.41,
+      "has_anomaly": false,
+      "anomaly_desc": "",
+      "evidence": "SIMULATED"
+    },
+    "z03": {
+      "zone_name": "z03",
+      "temperature": 22.02,
+      "target_setpoint": 22.0,
+      "co2": 413.2,
+      "humidity": 48.2,
+      "occupancy": 0,
+      "total_power_kw": 1.5,
+      "has_anomaly": false,
+      "anomaly_desc": "",
+      "evidence": "SIMULATED"
+    },
+    "z04": {
+      "zone_name": "z04",
+      "temperature": 21.02,
+      "target_setpoint": 21.0,
+      "co2": 412.2,
+      "humidity": 48.2,
+      "occupancy": 0,
+      "total_power_kw": 1.23,
+      "has_anomaly": false,
+      "anomaly_desc": "",
+      "evidence": "SIMULATED"
+    },
+    "z05": {
+      "zone_name": "z05",
+      "temperature": 23.57,
+      "target_setpoint": 23.5,
+      "co2": 417.6,
+      "humidity": 48.2,
+      "occupancy": 0,
+      "total_power_kw": 1.92,
+      "has_anomaly": false,
+      "anomaly_desc": "",
+      "evidence": "SIMULATED"
+    },
+    "z06": {
+      "zone_name": "z06",
+      "temperature": 23.03,
+      "target_setpoint": 23.0,
+      "co2": 413.4,
+      "humidity": 47.6,
+      "occupancy": 0,
+      "total_power_kw": 3.1,
+      "has_anomaly": false,
+      "anomaly_desc": "",
+      "evidence": "SIMULATED"
+    },
+    "z07": {
+      "zone_name": "z07",
+      "temperature": 19.51,
+      "target_setpoint": 19.5,
+      "co2": 412.3,
+      "humidity": 46.3,
+      "occupancy": 0,
+      "total_power_kw": 5.13,
+      "has_anomaly": false,
+      "anomaly_desc": "",
+      "evidence": "SIMULATED"
+    },
+    "z08": {
+      "zone_name": "z08",
+      "temperature": 23.01,
+      "target_setpoint": 23.0,
+      "co2": 414.0,
+      "humidity": 48.1,
+      "occupancy": 0,
+      "total_power_kw": 0.94,
+      "has_anomaly": false,
+      "anomaly_desc": "",
+      "evidence": "SIMULATED"
+    }
+  }
+}
