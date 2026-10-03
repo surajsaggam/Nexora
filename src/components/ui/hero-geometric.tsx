@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import { motion } from "framer-motion";
+import { motion, useReducedMotion } from "framer-motion";
 import { cn } from "@/lib/utils";
 
 interface HeroGeometricProps {
@@ -22,6 +22,10 @@ function ElegantShape({
   height = 100,
   rotate = 0,
   gradient = "from-[#C05621]/15 to-transparent",
+  moveX = [0, 25, -15, 0],
+  moveY = [0, -35, 15, 0],
+  moveRotate = [0, 4, -3, 0],
+  duration = 6.5,
 }: {
   className?: string;
   delay?: number;
@@ -29,13 +33,19 @@ function ElegantShape({
   height?: number;
   rotate?: number;
   gradient?: string;
+  moveX?: number[];
+  moveY?: number[];
+  moveRotate?: number[];
+  duration?: number;
 }) {
+  const shouldReduceMotion = useReducedMotion();
+
   return (
     <motion.div
       initial={{
         opacity: 0,
-        y: -50,
-        rotate: rotate - 15,
+        y: shouldReduceMotion ? 0 : -30,
+        rotate: shouldReduceMotion ? rotate : rotate - 8,
       }}
       animate={{
         opacity: 1,
@@ -43,23 +53,32 @@ function ElegantShape({
         rotate: rotate,
       }}
       transition={{
-        duration: 2.4,
+        duration: shouldReduceMotion ? 0.6 : 1.6,
         delay,
-        ease: [0.23, 0.86, 0.39, 0.96],
-        opacity: { duration: 1.2 },
+        ease: [0.2, 0, 0, 1],
+        opacity: { duration: 1.0 },
       }}
-      className={cn("absolute", className)}
+      className={cn("absolute transform-gpu will-change-transform", className)}
     >
       <motion.div
-        animate={{
-          y: [0, 12, 0],
-          rotate: [0, 2, 0],
-        }}
-        transition={{
-          duration: 14,
-          repeat: Infinity,
-          ease: "easeInOut",
-        }}
+        animate={
+          shouldReduceMotion
+            ? undefined
+            : {
+                x: moveX,
+                y: moveY,
+                rotate: moveRotate,
+              }
+        }
+        transition={
+          shouldReduceMotion
+            ? undefined
+            : {
+                duration,
+                repeat: Infinity,
+                ease: "easeInOut",
+              }
+        }
         style={{
           width,
           height,
@@ -72,7 +91,7 @@ function ElegantShape({
             "bg-gradient-to-r to-transparent",
             gradient,
             "backdrop-blur-[2px] border border-[#C05621]/20 dark:border-[#C05621]/30",
-            "shadow-[0_8px_32px_0_rgba(192,86,33,0.06)]"
+            "shadow-[0_8px_32px_0_rgba(192,86,33,0.06)] dark:shadow-[0_8px_32px_0_rgba(0,0,0,0.25)]"
           )}
         />
       </motion.div>
@@ -98,42 +117,76 @@ export function HeroGeometric({
         className
       )}
     >
-      {/* Background Subtle Floating Geometrics (Warm cream/orange palette) */}
+      {/* Background Continuous Floating Geometrics with Depth and Asynchronous Loops */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none select-none">
+        {/* Shape 1: Hero Anchor — Upper-left foreground */}
         <ElegantShape
           delay={0.1}
-          width={600}
+          width={620}
           height={140}
           rotate={12}
-          gradient="from-[#C05621]/12 via-[#C05621]/5 to-transparent"
-          className="left-[-10%] top-[15%] md:left-[-5%] md:top-[18%]"
+          gradient="from-[#C05621]/15 via-[#C05621]/7 to-transparent"
+          moveX={[0, 32, -18, 0]}
+          moveY={[0, -44, 20, 0]}
+          moveRotate={[0, 4.5, -3.5, 0]}
+          duration={6.8}
+          className="left-[-8%] top-[14%] md:left-[-4%] md:top-[16%]"
         />
 
+        {/* Shape 2: Deep Counter-Balance — Upper-right midground */}
+        <ElegantShape
+          delay={0.2}
+          width={520}
+          height={125}
+          rotate={-16}
+          gradient="from-[#1E3A8A]/10 via-[#C05621]/8 to-transparent"
+          moveX={[0, -36, 20, 0]}
+          moveY={[0, 38, -22, 0]}
+          moveRotate={[0, -5, 3.5, 0]}
+          duration={6.2}
+          className="right-[-8%] top-[24%] md:right-[-3%] md:top-[26%]"
+        />
+
+        {/* Shape 3: Midground Floater — Lower-left */}
         <ElegantShape
           delay={0.3}
-          width={480}
-          height={120}
-          rotate={-16}
-          gradient="from-[#1E3A8A]/8 via-[#C05621]/6 to-transparent"
-          className="right-[-8%] top-[25%] md:right-[-2%] md:top-[28%]"
+          width={340}
+          height={95}
+          rotate={-8}
+          gradient="from-[#C05621]/14 via-[#D97706]/8 to-transparent"
+          moveX={[0, 26, -24, 0]}
+          moveY={[0, 32, -36, 0]}
+          moveRotate={[0, -4, 4.5, 0]}
+          duration={5.6}
+          className="left-[4%] bottom-[16%] md:left-[6%] md:bottom-[20%]"
         />
 
+        {/* Shape 4: Crisp Foreground Accent — Lower-right */}
+        <ElegantShape
+          delay={0.4}
+          width={280}
+          height={85}
+          rotate={22}
+          gradient="from-[#8C8883]/14 via-[#C05621]/8 to-transparent"
+          moveX={[0, -28, 22, 0]}
+          moveY={[0, -36, 18, 0]}
+          moveRotate={[0, 5, -3, 0]}
+          duration={5.2}
+          className="right-[12%] bottom-[10%] md:right-[16%] md:bottom-[14%]"
+        />
+
+        {/* Shape 5: Atmospheric Background Depth — Center-top */}
         <ElegantShape
           delay={0.5}
-          width={320}
-          height={90}
-          rotate={-8}
-          gradient="from-[#C05621]/10 to-transparent"
-          className="left-[5%] bottom-[18%]"
-        />
-
-        <ElegantShape
-          delay={0.6}
-          width={240}
-          height={80}
-          rotate={22}
-          gradient="from-[#6B6864]/10 to-transparent"
-          className="right-[15%] bottom-[12%]"
+          width={440}
+          height={110}
+          rotate={-5}
+          gradient="from-[#C05621]/8 via-[#E0DBD4]/12 to-transparent"
+          moveX={[0, 20, -25, 0]}
+          moveY={[0, -26, 30, 0]}
+          moveRotate={[0, 3, -4, 0]}
+          duration={7.6}
+          className="left-[32%] top-[6%] md:left-[38%] md:top-[8%]"
         />
       </div>
 
