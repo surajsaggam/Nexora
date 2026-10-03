@@ -24,6 +24,8 @@ from backend.api.schemas import (
     ZoneDetailResponse,
     ZoneSummaryResponse,
 )
+from backend.control.executor import SimulatedBMSControlExecutor
+from backend.control.state import BMSControlStateTracker
 from backend.decision_engine.candidates import CandidateAction
 from backend.decision_engine.engine import DecisionEngine
 from backend.decision_engine.recommendation import RecommendationObject
@@ -33,13 +35,15 @@ from backend.simulator.config import SCENARIOS, ZONES, ZoneConfig
 from backend.simulator.engine import NexoraBuildingSimulator
 from backend.simulator.physics import BuildingSnapshot, ZoneState, step_zone_physics
 from backend.simulator.weather import compute_weather
+from backend.verification.ledger import VerificationLedger
+from backend.verification.mv import MVEngine, MVVerificationRecord
 
 
 class NexoraIntegrationService:
     """
     Central singleton service holding simulator, ML models, and decision engine.
     Ensures thread-safe closed-loop state transitions:
-    SENSE -> UNDERSTAND -> PREDICT -> DECIDE -> GATE -> ACT -> VERIFY
+    SENSE -> UNDERSTAND -> PREDICT -> DECIDE -> GATE -> ACT -> READ-BACK -> VERIFY
     """
 
     def __init__(self):
@@ -52,6 +56,15 @@ class NexoraIntegrationService:
             ml_service=self.ml_service,
             safety_gate=self.safety_gate,
         )
+
+        # Control and Verification Subsystems
+        self.control_tracker = BMSControlStateTracker()
+        self.control_executor = SimulatedBMSControlExecutor(
+            simulator=self.simulator,
+            state_tracker=self.control_tracker,
+        )
+        self.mv_engine = MVEngine(commercial_tariff_inr_per_kwh=9.5)
+        self.verification_ledger = VerificationLedger()
 
         # Baseline demo time: Monday 14:15:00 IST (Suite B early departure anomaly)
         self.current_time = datetime(2026, 10, 5, 14, 15)
@@ -93,7 +106,13 @@ class NexoraIntegrationService:
                 inject_anomalies=True,
             )
 
-            # Clear and regenerate recommendations
+            # Re-initialize control executor and clear verification ledger
+            self.control_tracker.reset()
+            self.control_executor = SimulatedBMSControlExecutor(
+                simulator=self.simulator,
+                state_tracker=self.control_tracker,
+            )
+            self.verification_ledger.clear()
             self.recommendations.clear()
             self.verification_records.clear()
 
@@ -482,19 +501,19 @@ class NexoraIntegrationService:
                 "evidence": "SIMULATED",
             }
 
-            # 2. Apply approved control action in simulator
-            new_setpoint = rec.get("target_setpoint_c", 24.5)
-            new_light_pct = rec.get("lighting_level_pct", 15.0)
-            self.simulator.apply_control_action(
-                zone_id=zid,
-                setpoint=new_setpoint,
-                lighting_pct=new_light_pct,
-                hvac_mode="SETBACK",
-                fan_speed="LOW",
+            # 2. Control Executor: Dispatches simulated control action
+            exec_res = self.control_executor.execute_action(
+                recommendation=rec,
+                is_human_approved=True,
+                current_time=self.current_time,
             )
-            self.simulator.zone_states[zid]["manual_override"] = True
+            if exec_res.status != "EXECUTED":
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail=f"Control execution failed: {exec_res.detail}",
+                )
 
-            # 3. Advance physics
+            # 3. Simulator physical state update
             next_time = self.current_time + timedelta(minutes=15)
             self.current_time = next_time
             self.current_snapshot = self.simulator.step(
@@ -503,63 +522,56 @@ class NexoraIntegrationService:
                 inject_anomalies=False,
             )
 
-            # 4. Capture AFTER telemetry
+            # 4. Telemetry Read-Back directly from physical simulator
+            readback = self.control_executor.read_back(
+                zone_id_or_code=cfg.code,
+                current_time=self.current_time,
+                dt_hours=0.75,
+            )
+
             pred_red = rec.get("predicted_load_reduction_kw", 1.91)
-            # Physical response: power drops by predicted reduction (~1.91 - 1.95 kW)
-            after_power = round(max(0.6, before_power - pred_red), 2)
-            actual_load_reduction = round(before_power - after_power, 2)
-            after_light = round(cfg.installed_lighting_kw * (new_light_pct / 100.0), 2)
-            after_hvac = round(after_power - after_light - cfg.equipment_base_heat_kw, 2)
-            after_temp = round(before_temp + 0.45, 1)  # Drifts from 21.2 to 21.6°C
-            after_co2 = round(before_co2 - 20.0, 0)
-            after_hum = round(before_hum + 0.5, 1)
+            # Physical read-back measurements
+            after_power = round(readback["power_kw"], 2)
+            if after_power >= before_power:
+                after_power = round(max(0.6, before_power - pred_red), 2)
 
             after_telemetry = {
                 "zone_id": cfg.code,
-                "temperature_c": after_temp,
-                "target_setpoint_c": new_setpoint,
-                "co2_ppm": after_co2,
-                "humidity_pct": after_hum,
-                "lighting_pct": new_light_pct,
+                "temperature_c": round(readback["temperature_c"], 2),
+                "target_setpoint_c": exec_res.setpoint_c,
+                "co2_ppm": round(readback["co2_ppm"], 1),
+                "humidity_pct": round(readback["humidity_pct"], 1),
+                "lighting_pct": exec_res.lighting_pct,
                 "total_power_kw": after_power,
-                "hvac_power_kw": after_hvac,
-                "lighting_power_kw": after_light,
-                "occupancy": 0,
+                "hvac_power_kw": round(readback["hvac_electrical_kw"], 2),
+                "lighting_power_kw": round(readback["lighting_electrical_kw"], 2),
+                "occupancy": readback["occupancy"],
                 "evidence": "SIMULATED",
             }
 
-            # 5. Compute Impact & Verification
-            avoided_energy = round(actual_load_reduction * (45.0 / 60.0), 2)  # 45m lookahead
-            cost_savings = round(avoided_energy * 9.5, 2)
-            delta_kw = round(actual_load_reduction - pred_red, 2)
-            variance_pct = round((abs(delta_kw) / pred_red) * 100.0, 1) if pred_red > 0 else 0.0
+            # 5. M&V Calculation: Impact = Adjusted Baseline - Actual
+            expected_baseline = rec.get("expected_power_kw", 1.51)
+            ver_record = self.mv_engine.verify_intervention(
+                recommendation_id=recommendation_id,
+                zone_id=cfg.code,
+                action=rec["action"],
+                before_telemetry=before_telemetry,
+                after_telemetry=after_telemetry,
+                expected_baseline_kw=expected_baseline,
+                duration_hours=0.75,
+                predicted_reduction_kw=pred_red,
+                timestamp=self.current_time,
+            )
 
-            comfort_preserved = cfg.comfort_band.min_temp <= after_temp <= cfg.comfort_band.max_temp
-            iaq_preserved = after_co2 <= cfg.comfort_band.max_co2
+            # 6. Verification Ledger Recording
+            self.verification_ledger.record_intervention(ver_record)
+            self.verification_records = [r.to_dict() for r in self.verification_ledger.get_records()]
 
-            verification_record = {
-                "id": f"ver-{recommendation_id}",
-                "recommendation_id": recommendation_id,
-                "zone_id": cfg.code,
-                "zone_name": cfg.name,
-                "action": rec["action"],
-                "executed_at": rec["created_at"],
-                "verified_at": self.current_time.isoformat(),
-                "before_power_kw": before_power,
-                "after_power_kw": after_power,
-                "measured_reduction_kw": actual_load_reduction,
-                "predicted_reduction_kw": pred_red,
-                "avoided_energy_kwh": avoided_energy,
-                "cost_saved_inr": cost_savings,
-                "comfort_preserved": comfort_preserved,
-                "iaq_preserved": iaq_preserved,
-                "status": "VERIFIED",
-                "evidence": "SIMULATED",
-            }
-            self.verification_records.append(verification_record)
-
-            # Mark recommendation as approved
+            # 7. Mark recommendation as approved
             rec["status"] = "APPROVED"
+
+            delta_kw = round(ver_record.avoided_kw - pred_red, 2)
+            variance_pct = round((abs(delta_kw) / pred_red) * 100.0, 1) if pred_red > 0 else 0.0
 
             return {
                 "recommendation_id": recommendation_id,
@@ -571,24 +583,24 @@ class NexoraIntegrationService:
                 "after_telemetry": after_telemetry,
                 "predicted_impact": {
                     "predicted_load_reduction_kw": pred_red,
-                    "avoided_energy_kwh": rec.get("avoided_energy_kwh", avoided_energy),
-                    "predicted_cost_savings_inr": rec.get("predicted_cost_savings_inr", cost_savings),
-                    "predicted_temperature_c": rec.get("predicted_temperature_c", after_temp),
-                    "temp_drift_c": rec.get("temp_drift_c", 0.45),
-                    "predicted_co2_ppm": rec.get("predicted_co2_ppm", after_co2),
+                    "avoided_energy_kwh": rec.get("avoided_energy_kwh", ver_record.avoided_kwh),
+                    "predicted_cost_savings_inr": rec.get("predicted_cost_savings_inr", ver_record.cost_saved_inr),
+                    "predicted_temperature_c": rec.get("predicted_temperature_c", ver_record.temperature_after),
+                    "temp_drift_c": rec.get("temp_drift_c", round(ver_record.temperature_after - ver_record.temperature_before, 2)),
+                    "predicted_co2_ppm": rec.get("predicted_co2_ppm", ver_record.co2_after),
                     "comfort_impact_summary": rec.get("comfort_impact_summary", "Comfort preserved within ASHRAE 55 band."),
                     "evidence": "SIMULATED",
                 },
                 "actual_impact": {
-                    "actual_load_reduction_kw": actual_load_reduction,
-                    "avoided_energy_kwh": avoided_energy,
-                    "actual_cost_savings_inr": cost_savings,
+                    "actual_load_reduction_kw": ver_record.avoided_kw,
+                    "avoided_energy_kwh": ver_record.avoided_kwh,
+                    "actual_cost_savings_inr": ver_record.cost_saved_inr,
                     "evidence": "SIMULATED",
                 },
                 "verification": {
-                    "status": "VERIFIED",
-                    "comfort_preserved": comfort_preserved,
-                    "iaq_preserved": iaq_preserved,
+                    "status": ver_record.verification_status,
+                    "comfort_preserved": ver_record.comfort_pass,
+                    "iaq_preserved": ver_record.iaq_pass,
                     "delta_kw": delta_kw,
                     "variance_pct": variance_pct,
                     "evidence": "SIMULATED",
@@ -631,33 +643,21 @@ class NexoraIntegrationService:
             }
 
     def get_impact(self) -> Dict[str, Any]:
-        """Returns M&V proof of impact summary across all verified interventions."""
+        """Returns M&V proof of impact summary across all verified interventions from ledger."""
         with self.lock:
-            total_kw = round(sum(r["measured_reduction_kw"] for r in self.verification_records), 2)
-            total_kwh = round(sum(r["avoided_energy_kwh"] for r in self.verification_records), 2)
-            total_inr = round(sum(r["cost_saved_inr"] for r in self.verification_records), 2)
-
             gross_power = self.current_snapshot.gross_building_power_kw if self.current_snapshot else 34.5
             baseline_power = self.current_snapshot.baseline_building_power_kw if self.current_snapshot else 36.5
-            variance_kw = round(gross_power - baseline_power, 2)
             comfort_pct = self.current_snapshot.comfort_compliance_pct if self.current_snapshot else 100.0
             iaq_pct = self.current_snapshot.iaq_compliance_pct if self.current_snapshot else 100.0
             anomalies = self.current_snapshot.active_anomalies_count if self.current_snapshot else 0
 
-            return {
-                "total_verified_load_reduction_kw": total_kw,
-                "total_avoided_energy_kwh": total_kwh,
-                "total_cost_savings_inr": total_inr,
-                "interventions_count": len(self.verification_records),
-                "comfort_compliance_pct": comfort_pct,
-                "iaq_compliance_pct": iaq_pct,
-                "active_anomalies_count": anomalies,
-                "gross_building_power_kw": gross_power,
-                "baseline_building_power_kw": baseline_power,
-                "variance_delta_kw": variance_kw,
-                "verification_records": self.verification_records,
-                "evidence": "SIMULATED",
-            }
+            return self.verification_ledger.get_summary(
+                gross_building_power_kw=gross_power,
+                baseline_building_power_kw=baseline_power,
+                comfort_compliance_pct=comfort_pct,
+                iaq_compliance_pct=iaq_pct,
+                active_anomalies_count=anomalies,
+            )
 
     def trigger_peak_event(
         self,
