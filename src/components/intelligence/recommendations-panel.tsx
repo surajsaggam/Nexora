@@ -14,13 +14,11 @@ import {
 import { cn } from "@/lib/utils";
 
 export function RecommendationsPanel() {
-  const { recommendations, approveRecommendation, rejectRecommendation, mode } = useNexora();
-  const [expandedRecs, setExpandedRecs] = useState<Record<string, boolean>>({
-    "rec-z04-01": true, // open primary demo recommendation by default
-  });
+  const { recommendations, approveRecommendation, rejectRecommendation, mode, isLoading } = useNexora();
+  const [expandedRecs, setExpandedRecs] = useState<Record<string, boolean>>({});
 
   const toggleExpand = (id: string) => {
-    setExpandedRecs((prev) => ({ ...prev, [id]: !prev[id] }));
+    setExpandedRecs((prev) => ({ ...prev, [id]: prev[id] === undefined ? false : !prev[id] }));
   };
 
   return (
@@ -228,16 +226,18 @@ export function RecommendationsPanel() {
                   <div className="flex items-center gap-2">
                     <button
                       onClick={() => rejectRecommendation(rec.id)}
-                      className="px-3.5 py-1.5 rounded-full text-xs font-semibold border border-[#E0DBD4] dark:border-[#333330] hover:bg-[#EAE6E1] dark:hover:bg-[#2A2A28] text-[#6B6864] transition-colors btn-press"
+                      disabled={isLoading}
+                      className="px-3.5 py-1.5 rounded-full text-xs font-semibold border border-[#E0DBD4] dark:border-[#333330] hover:bg-[#EAE6E1] dark:hover:bg-[#2A2A28] text-[#6B6864] transition-colors btn-press disabled:opacity-50"
                     >
                       Reject
                     </button>
                     <button
                       onClick={() => approveRecommendation(rec.id)}
-                      className="px-4 py-1.5 rounded-full text-xs font-bold bg-[#141413] text-[#F4F1EE] dark:bg-[#F4F1EE] dark:text-[#141413] hover:opacity-90 transition-all shadow-sm btn-press flex items-center gap-1.5"
+                      disabled={isLoading}
+                      className="px-4 py-1.5 rounded-full text-xs font-bold bg-[#141413] text-[#F4F1EE] dark:bg-[#F4F1EE] dark:text-[#141413] hover:opacity-90 transition-all shadow-sm btn-press flex items-center gap-1.5 disabled:opacity-60"
                     >
-                      <Zap className="size-3 text-[#C05621]" />
-                      <span>Approve &amp; Execute</span>
+                      <Zap className={cn("size-3 text-[#C05621]", isLoading && "animate-spin")} />
+                      <span>{isLoading ? "Executing..." : "Approve & Execute"}</span>
                     </button>
                   </div>
                 )}

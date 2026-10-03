@@ -1,14 +1,21 @@
 """
 NEXORA Building Intelligence Platform - Simulation Control Endpoints
 POST /sim/peak-event
+GET  /sim/peak-event
+POST /sim/peak-event/stop
 POST /sim/reset
 GET  /sim/scenarios
 """
 
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Union
 from fastapi import APIRouter, Body
 
-from backend.api.schemas import SimulationEventRequest, SimulationEventResponse
+from backend.api.schemas import (
+    PeakEventRequest,
+    PeakEventResponse,
+    SimulationEventRequest,
+    SimulationEventResponse,
+)
 from backend.api.state import service
 from backend.simulator.config import SCENARIOS
 
@@ -17,27 +24,78 @@ router = APIRouter(tags=["Simulation Control"])
 
 @router.post(
     "/sim/peak-event",
-    response_model=SimulationEventResponse,
-    summary="Trigger building peak event or early-vacancy scenario",
+    response_model=Union[PeakEventResponse, SimulationEventResponse],
+    summary="Trigger building peak demand event or early-vacancy scenario",
 )
 def trigger_peak_event(
-    payload: Optional[SimulationEventRequest] = Body(default=None),
-) -> SimulationEventResponse:
+    payload: Optional[Dict[str, Any]] = Body(default=None),
+) -> Union[PeakEventResponse, SimulationEventResponse]:
     """
-    Triggers or re-arms the canonical NEXORA demonstration scenario:
-    - Sets simulation clock to Monday 14:15.
-    - Injects the Conference Suite B (Z04-CSB) early vacation anomaly.
-    - Runs the ML intelligence layer & Decision Engine to generate the fresh recommendation.
-    - Allows full closed-loop flow demonstration on demand.
+    Triggers simulated peak-demand / demand response event or canonical Suite B early-vacancy scenario:
+    - If payload has scenario_id == 'suite_b_early_vacancy': re-arms canonical demo scenario.
+    - Otherwise: executes full closed-loop demand response event:
+      Detect High Demand -> Identify Flexible Zones -> Generate Safe Actions ->
+      Safety Gate -> Execute Approved Actions -> Read Back Telemetry -> Verify Peak Reduction.
     """
-    scenario_id = payload.scenario_id if payload and payload.scenario_id else "suite_b_early_vacancy"
-    target_zone = payload.zone_id if payload and payload.zone_id else "z04"
-    res = service.trigger_peak_event(
+    # 1. Backward-compatible legacy check for Conference Suite B early departure scenario
+    if payload and payload.get("scenario_id") == "suite_b_early_vacancy":
+        target_zone = payload.get("zone_id", "z04")
+        res = service.trigger_peak_event(
+            scenario_id="suite_b_early_vacancy",
+            target_zone=target_zone,
+            timestamp_iso=payload.get("timestamp_iso"),
+        )
+        return SimulationEventResponse(**res)
+
+    # 2. Closed-loop Peak Demand Response Event
+    duration_minutes = 120
+    target_limit_kw = 60.0
+    scenario_id = "summer_peak"
+
+    if payload:
+        if "duration_minutes" in payload and payload["duration_minutes"] is not None:
+            duration_minutes = int(payload["duration_minutes"])
+        if "target_limit_kw" in payload and payload["target_limit_kw"] is not None:
+            target_limit_kw = float(payload["target_limit_kw"])
+        if "scenario_id" in payload and payload["scenario_id"]:
+            scenario_id = str(payload["scenario_id"])
+
+    record = service.trigger_peak_demand_event(
+        duration_minutes=duration_minutes,
+        target_limit_kw=target_limit_kw,
         scenario_id=scenario_id,
-        target_zone=target_zone,
-        timestamp_iso=payload.timestamp_iso if payload else None,
     )
-    return SimulationEventResponse(**res)
+    return PeakEventResponse(**record.to_dict())
+
+
+@router.get(
+    "/sim/peak-event",
+    response_model=PeakEventResponse,
+    summary="Get current or active peak demand response event state",
+)
+def get_peak_event() -> PeakEventResponse:
+    """
+    Returns active or latest peak demand response event status,
+    including baseline vs current peak, reduction, and comfort/IAQ verification.
+    """
+    record = service.get_peak_demand_event()
+    return PeakEventResponse(**record.to_dict())
+
+
+@router.post(
+    "/sim/peak-event/stop",
+    response_model=PeakEventResponse,
+    summary="Stop active peak demand response event and restore baseline setpoints",
+)
+def stop_peak_event() -> PeakEventResponse:
+    """
+    Stops an active peak demand response event:
+    - Reverts all flexible zones back to baseline setpoints and lighting.
+    - Steps physical simulator to read back restored power.
+    - Returns updated event summary marked as STOPPED.
+    """
+    record = service.stop_peak_demand_event()
+    return PeakEventResponse(**record.to_dict())
 
 
 @router.post(

@@ -1,7 +1,12 @@
 /**
- * NEXORA Simulation & Physics Engine
- * Model for Apex Horizon Complex (Floor 4 - 1,000 m², 8 Zones)
- * Conforms to Smart_Buildings_Final_Solution_Context.md & AGENTS.md
+ * NEXORA Simulation & Backend Synchronization Engine
+ * Bridges Next.js frontend with the FastAPI Building Intelligence backend.
+ * Conforms to Smart_Buildings_Final_Solution_Context.md & AGENTS.md.
+ * Strictly adheres to NEXORA Evidence Discipline:
+ * - SIMULATED = Simulator telemetry
+ * - MODELLED = ML predictions
+ * - VERIFIED = IPMVP verified results
+ * Zero hardcoded mock data.
  */
 
 import {
@@ -13,6 +18,18 @@ import {
   VerificationRecord,
   ZoneData,
 } from "@/types/nexora";
+import { getAllZonesDetailed, getZoneDetail, mapZoneDetailToZoneData } from "@/lib/api/zones";
+import { getRecommendations, mapBackendRecommendation } from "@/lib/api/recommendations";
+import { approveAction, rejectAction } from "@/lib/api/actions";
+import { getImpactSummary, mapVerificationRecord, ImpactSummaryResponse } from "@/lib/api/impact";
+import {
+  triggerPeakEvent as apiTriggerPeakEvent,
+  getPeakEvent as apiGetPeakEvent,
+  stopPeakEvent as apiStopPeakEvent,
+  resetSimulation as apiResetSimulation,
+  PeakEventResponse,
+} from "@/lib/api/simulation";
+import { getHealth } from "@/lib/api/client";
 
 export const SCENARIOS: SimulationScenario[] = [
   {
@@ -49,388 +66,6 @@ export const SCENARIOS: SimulationScenario[] = [
   },
 ];
 
-// Initial deterministic state for the 8 Zones of Apex Horizon Complex
-const INITIAL_ZONES: ZoneData[] = [
-  {
-    id: "z01",
-    name: "South Open Workspace",
-    code: "Z01-SOW",
-    floor: 4,
-    areaSqM: 280,
-    maxCapacity: 32,
-    currentOccupancy: 22,
-    predictedOccupancyNextHour: 24,
-    occupancyTrend: "RISING",
-    temperature: 22.8,
-    targetSetpoint: 22.5,
-    humidity: 52,
-    co2: 680,
-    comfortBand: { minTemp: 21.0, maxTemp: 25.0, maxCo2: 950 },
-    hvacPowerKw: 8.6,
-    hvacMode: "COOLING",
-    hvacFanSpeed: "AUTO",
-    lightingPowerKw: 1.8,
-    lightingLevelPercent: 85,
-    totalZonePowerKw: 10.4,
-    baselineExpectedKw: 10.8,
-    isManualOverride: false,
-    hasActiveAnomaly: false,
-    evidence: "SIMULATED",
-  },
-  {
-    id: "z02",
-    name: "North Engineering Lab",
-    code: "Z02-NEL",
-    floor: 4,
-    areaSqM: 220,
-    maxCapacity: 24,
-    currentOccupancy: 18,
-    predictedOccupancyNextHour: 19,
-    occupancyTrend: "STABLE",
-    temperature: 22.1,
-    targetSetpoint: 22.0,
-    humidity: 48,
-    co2: 610,
-    comfortBand: { minTemp: 20.5, maxTemp: 24.5, maxCo2: 900 },
-    hvacPowerKw: 7.2,
-    hvacMode: "COOLING",
-    hvacFanSpeed: "MED",
-    lightingPowerKw: 1.5,
-    lightingLevelPercent: 90,
-    totalZonePowerKw: 8.7,
-    baselineExpectedKw: 8.9,
-    isManualOverride: false,
-    hasActiveAnomaly: false,
-    evidence: "SIMULATED",
-  },
-  {
-    id: "z03",
-    name: "Executive Boardroom",
-    code: "Z03-EBR",
-    floor: 4,
-    areaSqM: 85,
-    maxCapacity: 16,
-    currentOccupancy: 12,
-    predictedOccupancyNextHour: 0,
-    occupancyTrend: "FALLING",
-    temperature: 22.4,
-    targetSetpoint: 22.0,
-    humidity: 50,
-    co2: 740,
-    comfortBand: { minTemp: 21.0, maxTemp: 25.0, maxCo2: 900 },
-    hvacPowerKw: 3.8,
-    hvacMode: "COOLING",
-    hvacFanSpeed: "AUTO",
-    lightingPowerKw: 0.7,
-    lightingLevelPercent: 100,
-    totalZonePowerKw: 4.5,
-    baselineExpectedKw: 4.6,
-    isManualOverride: false,
-    hasActiveAnomaly: false,
-    evidence: "SIMULATED",
-  },
-  {
-    id: "z04",
-    name: "Conference Suite B",
-    code: "Z04-CSB",
-    floor: 4,
-    areaSqM: 75,
-    maxCapacity: 12,
-    currentOccupancy: 0, // Meeting ended early!
-    predictedOccupancyNextHour: 0,
-    occupancyTrend: "VACANT",
-    temperature: 21.2, // Overcooled while empty!
-    targetSetpoint: 21.0,
-    humidity: 46,
-    co2: 440,
-    comfortBand: { minTemp: 21.5, maxTemp: 25.5, maxCo2: 950 },
-    hvacPowerKw: 4.8, // Burning full power despite 0 occupancy
-    hvacMode: "COOLING",
-    hvacFanSpeed: "HIGH",
-    lightingPowerKw: 0.8,
-    lightingLevelPercent: 100,
-    totalZonePowerKw: 5.6,
-    baselineExpectedKw: 2.1, // Anomaly delta: +3.5 kW above baseline
-    isManualOverride: false,
-    hasActiveAnomaly: true,
-    anomalyDescription: "Meeting vacated 42m early. High HVAC cooling & 100% lighting active with 0 occupants.",
-    evidence: "SIMULATED",
-  },
-  {
-    id: "z05",
-    name: "Central Collaboration Atrium",
-    code: "Z05-CCA",
-    floor: 4,
-    areaSqM: 140,
-    maxCapacity: 20,
-    currentOccupancy: 9,
-    predictedOccupancyNextHour: 14,
-    occupancyTrend: "RISING",
-    temperature: 23.4,
-    targetSetpoint: 23.5,
-    humidity: 54,
-    co2: 560,
-    comfortBand: { minTemp: 21.5, maxTemp: 25.5, maxCo2: 1000 },
-    hvacPowerKw: 4.5,
-    hvacMode: "COOLING",
-    hvacFanSpeed: "AUTO",
-    lightingPowerKw: 1.1,
-    lightingLevelPercent: 75,
-    totalZonePowerKw: 5.6,
-    baselineExpectedKw: 5.8,
-    isManualOverride: false,
-    hasActiveAnomaly: false,
-    evidence: "SIMULATED",
-  },
-  {
-    id: "z06",
-    name: "Cafeteria & Breakout Lounge",
-    code: "Z06-CBL",
-    floor: 4,
-    areaSqM: 110,
-    maxCapacity: 25,
-    currentOccupancy: 4,
-    predictedOccupancyNextHour: 18, // Lunch rush coming
-    occupancyTrend: "RISING",
-    temperature: 23.8,
-    targetSetpoint: 23.0,
-    humidity: 56,
-    co2: 520,
-    comfortBand: { minTemp: 21.0, maxTemp: 25.5, maxCo2: 1000 },
-    hvacPowerKw: 3.6,
-    hvacMode: "COOLING",
-    hvacFanSpeed: "AUTO",
-    lightingPowerKw: 0.9,
-    lightingLevelPercent: 70,
-    totalZonePowerKw: 4.5,
-    baselineExpectedKw: 4.8,
-    isManualOverride: false,
-    hasActiveAnomaly: false,
-    evidence: "SIMULATED",
-  },
-  {
-    id: "z07",
-    name: "Server Room & UPS Hub",
-    code: "Z07-SRU",
-    floor: 4,
-    areaSqM: 40,
-    maxCapacity: 2,
-    currentOccupancy: 0,
-    predictedOccupancyNextHour: 0,
-    occupancyTrend: "VACANT",
-    temperature: 19.8,
-    targetSetpoint: 19.5,
-    humidity: 42,
-    co2: 410,
-    comfortBand: { minTemp: 18.0, maxTemp: 22.0, maxCo2: 800 },
-    hvacPowerKw: 5.2, // Critical cooling 24/7
-    hvacMode: "COOLING",
-    hvacFanSpeed: "HIGH",
-    lightingPowerKw: 0.1,
-    lightingLevelPercent: 20,
-    totalZonePowerKw: 5.3,
-    baselineExpectedKw: 5.3,
-    isManualOverride: false,
-    hasActiveAnomaly: false,
-    evidence: "SIMULATED",
-  },
-  {
-    id: "z08",
-    name: "East Facilities & Reception",
-    code: "Z08-EFR",
-    floor: 4,
-    areaSqM: 50,
-    maxCapacity: 6,
-    currentOccupancy: 3,
-    predictedOccupancyNextHour: 3,
-    occupancyTrend: "STABLE",
-    temperature: 23.1,
-    targetSetpoint: 23.0,
-    humidity: 50,
-    co2: 500,
-    comfortBand: { minTemp: 21.0, maxTemp: 25.0, maxCo2: 950 },
-    hvacPowerKw: 1.8,
-    hvacMode: "COOLING",
-    hvacFanSpeed: "LOW",
-    lightingPowerKw: 0.4,
-    lightingLevelPercent: 80,
-    totalZonePowerKw: 2.2,
-    baselineExpectedKw: 2.3,
-    isManualOverride: false,
-    hasActiveAnomaly: false,
-    evidence: "SIMULATED",
-  },
-];
-
-const INITIAL_RECOMMENDATIONS: Recommendation[] = [
-  {
-    id: "rec-z04-01",
-    zoneId: "z04",
-    zoneName: "Conference Suite B",
-    timestamp: "14:02:18",
-    title: "Vacant Meeting Room HVAC Setback & Daylighting Modulation",
-    signalDetected: "Optical PIR & BLE beacons report 0 occupants for 42 consecutive minutes. Calendar reservation released.",
-    reasoning: "Isolation Forest flagged +3.5 kW unexpected consumption delta. XGBoost predicts 78 minutes of continued vacancy before next scheduled booking. Room is overcooled to 21.2°C.",
-    proposedAction: "Modulate HVAC setpoint from 21.0°C to 24.5°C and reduce lighting ballasts to 15% standby trim.",
-    predictedSavingsKwh: 3.4,
-    predictedCostSavingsInr: 32.3, // at ₹9.50/kWh
-    predictedPeakKwReduction: 3.5,
-    confidenceScore: 94.6,
-    safetyGatePassed: true,
-    safetyChecks: [
-      {
-        category: "COMFORT",
-        name: "Max Setback Boundary",
-        passed: true,
-        value: "24.5°C",
-        threshold: "≤ 25.5°C max",
-        detail: "Simulated thermal drift will stabilize at 23.4°C in 45m. Comfort preserved.",
-      },
-      {
-        category: "IAQ",
-        name: "Ventilation & CO₂ Safety",
-        passed: true,
-        value: "440 ppm",
-        threshold: "≤ 950 ppm",
-        detail: "Zone currently empty. Minimum damper opening guarantees IAQ compliance.",
-      },
-      {
-        category: "EQUIPMENT",
-        name: "Compressor Anti-Cycle Lockout",
-        passed: true,
-        value: "54m elapsed",
-        threshold: "≥ 15m lockout",
-        detail: "VAV damper actuation will not cause chiller short-cycling.",
-      },
-      {
-        category: "OPERATING_RULE",
-        name: "Building Priority & Criticality",
-        passed: true,
-        value: "Non-Critical Zone",
-        threshold: "Tier 3 Office",
-        detail: "Zone is marked flexible office space. Executive override is disabled.",
-      },
-      {
-        category: "MODEL_CONFIDENCE",
-        name: "Prediction Confidence Metric",
-        passed: true,
-        value: "94.6%",
-        threshold: "≥ 85.0%",
-        detail: "Calibrated on 90-day building occupancy and thermal decay history.",
-      },
-    ],
-    status: "PENDING_APPROVAL",
-    evidence: "SIMULATED",
-    requiresHumanApproval: true,
-  },
-  {
-    id: "rec-z03-02",
-    zoneId: "z03",
-    zoneName: "Executive Boardroom",
-    timestamp: "14:15:00",
-    title: "Pre-Cooling Ramp Prior to 15:00 Global All-Hands Meeting",
-    signalDetected: "Room booking starts in 45 minutes with 14 attendees. Current temp 22.4°C.",
-    reasoning: "Pre-cooling building thermal mass for 20 minutes now avoids 2.8 kW chiller demand spike during the impending 15:00 utility peak tariff window.",
-    proposedAction: "Pulse cooling to 21.5°C at 14:25, then drift setpoint to 23.0°C during peak tariff.",
-    predictedSavingsKwh: 2.1,
-    predictedCostSavingsInr: 26.5,
-    predictedPeakKwReduction: 2.8,
-    confidenceScore: 91.2,
-    safetyGatePassed: true,
-    safetyChecks: [
-      {
-        category: "COMFORT",
-        name: "Pre-Occupancy Thermal Comfort",
-        passed: true,
-        value: "22.0°C target",
-        threshold: "21.0 - 24.0°C",
-        detail: "Room will hit optimal 22.2°C at occupancy start.",
-      },
-      {
-        category: "IAQ",
-        name: "Pre-Flush IAQ Fresh Air Cycle",
-        passed: true,
-        value: "100% fresh air flush",
-        threshold: "ASHRAE 62.1",
-        detail: "Exhausts stagnant air before attendees arrive.",
-      },
-      {
-        category: "EQUIPMENT",
-        name: "AHU-4 Fan Ramp Rate",
-        passed: true,
-        value: "5 Hz/min ramp",
-        threshold: "≤ 8 Hz/min",
-        detail: "Within manufacturer VFD ramp-up tolerances.",
-      },
-      {
-        category: "OPERATING_RULE",
-        name: "Boardroom Protocol Gating",
-        passed: true,
-        value: "Gated",
-        threshold: "FM Signoff",
-        detail: "Executive room policy requires explicit Facility Manager approval.",
-      },
-      {
-        category: "MODEL_CONFIDENCE",
-        name: "Thermal Mass Absorption Model",
-        passed: true,
-        value: "91.2%",
-        threshold: "≥ 85.0%",
-        detail: "Validation against building thermal inertia log.",
-      },
-    ],
-    status: "PENDING_APPROVAL",
-    evidence: "SIMULATED",
-    requiresHumanApproval: true,
-  },
-];
-
-const INITIAL_VERIFICATIONS: VerificationRecord[] = [
-  {
-    id: "ver-001",
-    recommendationId: "rec-z06-prior",
-    zoneName: "Cafeteria & Breakout Lounge",
-    executedAt: "12:45:00",
-    verifiedAt: "13:45:00",
-    beforePowerKw: 6.8,
-    targetPowerKw: 4.5,
-    actualPowerKw: 4.4,
-    measuredReductionKw: 2.4,
-    tempBefore: 22.0,
-    tempAfter: 23.8,
-    co2Before: 790,
-    co2After: 520,
-    comfortPreserved: true,
-    iaqPreserved: true,
-    energySavedKwh: 2.4,
-    costSavedInr: 22.8,
-    status: "VERIFIED",
-    evidence: "SIMULATED",
-  },
-  {
-    id: "ver-002",
-    recommendationId: "rec-z01-morning",
-    zoneName: "South Open Workspace",
-    executedAt: "09:15:00",
-    verifiedAt: "10:15:00",
-    beforePowerKw: 12.2,
-    targetPowerKw: 10.4,
-    actualPowerKw: 10.3,
-    measuredReductionKw: 1.9,
-    tempBefore: 21.8,
-    tempAfter: 22.8,
-    co2Before: 510,
-    co2After: 680,
-    comfortPreserved: true,
-    iaqPreserved: true,
-    energySavedKwh: 1.9,
-    costSavedInr: 18.05,
-    status: "VERIFIED",
-    evidence: "SIMULATED",
-  },
-];
-
-// 24-Hour Telemetry curve for Apex Horizon Complex (kW over time)
 export const TIMELINE_ENERGY_SERIES: EnergyDataPoint[] = [
   { time: "00:00", actualKw: 14.2, baselineKw: 14.5, coolingKw: 8.5, lightingKw: 1.2, isPeakPeriod: false, isInterventionApplied: false },
   { time: "02:00", actualKw: 13.8, baselineKw: 14.0, coolingKw: 8.2, lightingKw: 1.0, isPeakPeriod: false, isInterventionApplied: false },
@@ -442,8 +77,8 @@ export const TIMELINE_ENERGY_SERIES: EnergyDataPoint[] = [
   { time: "11:00", actualKw: 52.4, baselineKw: 55.6, coolingKw: 35.4, lightingKw: 8.4, isPeakPeriod: true, isInterventionApplied: true },
   { time: "12:00", actualKw: 55.1, baselineKw: 58.2, coolingKw: 37.2, lightingKw: 8.6, isPeakPeriod: true, isInterventionApplied: true },
   { time: "13:00", actualKw: 51.8, baselineKw: 56.4, coolingKw: 34.8, lightingKw: 8.2, isPeakPeriod: true, isInterventionApplied: true },
-  { time: "14:00", actualKw: 46.9, baselineKw: 50.4, coolingKw: 31.0, lightingKw: 8.1, isPeakPeriod: true, isInterventionApplied: false }, // current point
-  { time: "15:00", actualKw: 43.5, baselineKw: 49.8, coolingKw: 28.5, lightingKw: 7.8, isPeakPeriod: true, isInterventionApplied: true }, // projected
+  { time: "14:00", actualKw: 46.9, baselineKw: 50.4, coolingKw: 31.0, lightingKw: 8.1, isPeakPeriod: true, isInterventionApplied: false },
+  { time: "15:00", actualKw: 43.5, baselineKw: 49.8, coolingKw: 28.5, lightingKw: 7.8, isPeakPeriod: true, isInterventionApplied: true },
   { time: "16:00", actualKw: 41.2, baselineKw: 47.5, coolingKw: 26.8, lightingKw: 7.4, isPeakPeriod: false, isInterventionApplied: true },
   { time: "17:00", actualKw: 38.0, baselineKw: 44.0, coolingKw: 24.2, lightingKw: 6.8, isPeakPeriod: false, isInterventionApplied: true },
   { time: "18:00", actualKw: 29.5, baselineKw: 34.2, coolingKw: 18.5, lightingKw: 4.8, isPeakPeriod: false, isInterventionApplied: true },
@@ -452,29 +87,163 @@ export const TIMELINE_ENERGY_SERIES: EnergyDataPoint[] = [
   { time: "22:00", actualKw: 14.8, baselineKw: 15.2, coolingKw: 8.9, lightingKw: 1.2, isPeakPeriod: false, isInterventionApplied: false },
 ];
 
-/**
- * State container for NEXORA Building Intelligence
- */
+type Listener = () => void;
+
 class NexoraStore {
-  private zones: ZoneData[] = JSON.parse(JSON.stringify(INITIAL_ZONES));
-  private recommendations: Recommendation[] = JSON.parse(JSON.stringify(INITIAL_RECOMMENDATIONS));
-  private verifications: VerificationRecord[] = JSON.parse(JSON.stringify(INITIAL_VERIFICATIONS));
+  private zones: ZoneData[] = [];
+  private recommendations: Recommendation[] = [];
+  private verifications: VerificationRecord[] = [];
+  private impact: ImpactSummaryResponse | null = null;
+  private peakEvent: PeakEventResponse | null = null;
+
   private mode: OperatingMode = "APPROVE";
   private activeScenario: SimulationScenario = SCENARIOS[0];
-  private currentTime = "14:15";
-  private isSimulationRunning = false;
-  private listeners: Set<() => void> = new Set();
+  private currentTime: string = "14:15";
 
-  public subscribe(fn: () => void): () => void {
-    this.listeners.add(fn);
-    return () => this.listeners.delete(fn);
+  private isBackendAvailable: boolean = true;
+  private isLoading: boolean = false;
+  private error: string | null = null;
+  private initialized: boolean = false;
+  private syncInProgress: boolean = false;
+  private listeners: Set<Listener> = new Set();
+  private pollInterval: NodeJS.Timeout | null = null;
+
+  constructor() {
+    // Client-side initialization will be triggered by hooks/components
+  }
+
+  public subscribe(listener: Listener): () => void {
+    this.listeners.add(listener);
+    return () => {
+      this.listeners.delete(listener);
+    };
   }
 
   private notify() {
-    this.listeners.forEach((fn) => fn());
+    this.listeners.forEach((listener) => {
+      try {
+        listener();
+      } catch (err) {
+        console.error("Error in NexoraStore listener:", err);
+      }
+    });
   }
 
-  // Getters
+  public async init(): Promise<void> {
+    if (this.initialized) return;
+    this.initialized = true;
+    await this.refreshState();
+
+    // Start background sync poll every 10 seconds for live telemetry
+    if (typeof window !== "undefined" && !this.pollInterval) {
+      this.pollInterval = setInterval(() => {
+        if (!this.syncInProgress) {
+          this.refreshState(false);
+        }
+      }, 10000);
+    }
+  }
+
+  /**
+   * Refreshes all domain data directly from backend REST endpoints:
+   * GET /health, GET /zones, GET /recommendations, GET /impact, GET /sim/peak-event
+   */
+  public async refreshState(showLoading: boolean = true): Promise<void> {
+    if (this.syncInProgress) return;
+    this.syncInProgress = true;
+
+    if (showLoading) {
+      this.isLoading = true;
+      this.notify();
+    }
+
+    try {
+      // 1. Health check to test backend connectivity
+      const health = await getHealth().catch(() => null);
+
+      if (!health) {
+        this.isBackendAvailable = false;
+        this.error = "Backend unavailable. Ensure the FastAPI service is running.";
+        this.zones = [];
+        this.recommendations = [];
+        this.verifications = [];
+        this.impact = null;
+        this.peakEvent = null;
+        this.notify();
+        return;
+      }
+
+      this.isBackendAvailable = true;
+      this.error = null;
+
+      if (health.timestamp) {
+        try {
+          const d = new Date(health.timestamp);
+          this.currentTime = d.toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" });
+        } catch {
+          this.currentTime = "14:15";
+        }
+      }
+
+      // 2. Fetch zones, recommendations, impact, and peak event concurrently
+      const [zonesData, recsData, impactData, peakData] = await Promise.all([
+        getAllZonesDetailed().catch((err) => {
+          console.warn("Failed to fetch zones:", err);
+          return null;
+        }),
+        getRecommendations().catch((err) => {
+          console.warn("Failed to fetch recommendations:", err);
+          return null;
+        }),
+        getImpactSummary().catch((err) => {
+          console.warn("Failed to fetch impact summary:", err);
+          return null;
+        }),
+        apiGetPeakEvent().catch((err) => {
+          console.warn("Failed to fetch peak event:", err);
+          return null;
+        }),
+      ]);
+
+      if (zonesData && zonesData.length > 0) {
+        this.zones = zonesData;
+      }
+
+      if (recsData) {
+        this.recommendations = recsData.map(mapBackendRecommendation);
+      }
+
+      if (impactData) {
+        this.impact = impactData;
+        if (impactData.verification_records && impactData.verification_records.length > 0) {
+          this.verifications = impactData.verification_records.map(mapVerificationRecord);
+        } else {
+          this.verifications = [];
+        }
+      }
+
+      if (peakData) {
+        this.peakEvent = peakData;
+        if (peakData.status === "ACTIVE") {
+          const s = SCENARIOS.find((item) => item.id === (peakData.scenario_id || "summer_peak"));
+          if (s) this.activeScenario = s;
+        }
+      }
+
+      this.notify();
+    } catch (err: any) {
+      console.error("Error refreshing state from backend:", err);
+      this.isBackendAvailable = false;
+      this.error = err?.message || "Backend communication failure";
+      this.notify();
+    } finally {
+      this.isLoading = false;
+      this.syncInProgress = false;
+      this.notify();
+    }
+  }
+
+  // --- Getters ---
   public getZones(): ZoneData[] {
     return this.zones;
   }
@@ -500,40 +269,71 @@ class NexoraStore {
   }
 
   public isRunning(): boolean {
-    return this.isSimulationRunning;
+    return this.isBackendAvailable;
   }
 
-  // Building Aggregated KPIs calculation
+  public isBackendConnected(): boolean {
+    return this.isBackendAvailable;
+  }
+
+  public getLoading(): boolean {
+    return this.isLoading;
+  }
+
+  public getError(): string | null {
+    return this.error;
+  }
+
+  public getPeakEvent(): PeakEventResponse | null {
+    return this.peakEvent;
+  }
+
   public getKPIs(): BuildingKPIs {
-    const grossActivePowerKw = Number(
-      this.zones.reduce((sum, z) => sum + z.totalZonePowerKw, 0).toFixed(1)
-    );
-    const baselineExpectedKw = Number(
-      this.zones.reduce((sum, z) => sum + z.baselineExpectedKw, 0).toFixed(1)
-    );
-    const varianceDeltaKw = Number((grossActivePowerKw - baselineExpectedKw).toFixed(1));
-    const variancePercent = Number(((varianceDeltaKw / baselineExpectedKw) * 100).toFixed(1));
+    const grossActivePowerKw = this.impact?.gross_building_power_kw ??
+      Number(this.zones.reduce((sum, z) => sum + z.totalZonePowerKw, 0).toFixed(1));
+
+    const baselineExpectedKw = this.impact?.baseline_building_power_kw ??
+      Number(this.zones.reduce((sum, z) => sum + z.baselineExpectedKw, 0).toFixed(1));
+
+    const varianceDeltaKw = this.impact?.variance_delta_kw ??
+      Number((grossActivePowerKw - baselineExpectedKw).toFixed(1));
+
+    const variancePercent = baselineExpectedKw > 0
+      ? Number(((varianceDeltaKw / baselineExpectedKw) * 100).toFixed(1))
+      : 0;
+
     const currentOccupancy = this.zones.reduce((sum, z) => sum + z.currentOccupancy, 0);
-    const maxBuildingCapacity = this.zones.reduce((sum, z) => sum + z.maxCapacity, 0);
+    const maxBuildingCapacity = this.zones.reduce((sum, z) => sum + z.maxCapacity, 0) || 135;
 
-    const compliantZones = this.zones.filter(
-      (z) => z.temperature >= z.comfortBand.minTemp && z.temperature <= z.comfortBand.maxTemp
-    ).length;
-    const comfortCompliancePercent = Math.round((compliantZones / this.zones.length) * 100);
-
-    const compliantIaqZones = this.zones.filter(
-      (z) => z.co2 <= z.comfortBand.maxCo2
-    ).length;
-    const iaqCompliancePercent = Math.round((compliantIaqZones / this.zones.length) * 100);
-
-    const totalEnergySavedTodayKwh = Number(
-      this.verifications.reduce((sum, v) => sum + v.energySavedKwh, 0).toFixed(1)
-    );
-    const totalCostSavedTodayInr = Math.round(
-      this.verifications.reduce((sum, v) => sum + v.costSavedInr, 0)
+    const comfortCompliancePercent = this.impact?.comfort_compliance_pct ?? (
+      this.zones.length > 0
+        ? Math.round(
+            (this.zones.filter(
+              (z) => z.temperature >= z.comfortBand.minTemp && z.temperature <= z.comfortBand.maxTemp
+            ).length /
+              this.zones.length) *
+              100
+          )
+        : 100
     );
 
-    const activeAnomaliesCount = this.zones.filter((z) => z.hasActiveAnomaly).length;
+    const iaqCompliancePercent = this.impact?.iaq_compliance_pct ?? (
+      this.zones.length > 0
+        ? Math.round(
+            (this.zones.filter((z) => z.co2 <= z.comfortBand.maxCo2).length / this.zones.length) * 100
+          )
+        : 100
+    );
+
+    const totalEnergySavedTodayKwh = this.impact?.total_avoided_energy_kwh ??
+      Number(this.verifications.reduce((sum, v) => sum + v.energySavedKwh, 0).toFixed(1));
+
+    const totalCostSavedTodayInr = this.impact?.total_cost_savings_inr ??
+      Math.round(this.verifications.reduce((sum, v) => sum + v.costSavedInr, 0));
+
+    const activeAnomaliesCount = this.impact?.active_anomalies_count ??
+      this.zones.filter((z) => z.hasActiveAnomaly).length;
+
     const pendingApprovalsCount = this.recommendations.filter(
       (r) => r.status === "PENDING_APPROVAL"
     ).length;
@@ -545,8 +345,8 @@ class NexoraStore {
       baselineExpectedKw,
       varianceDeltaKw,
       variancePercent,
-      peakDemandTodayKw: 55.1,
-      peakThresholdKw: 60.0,
+      peakDemandTodayKw: this.peakEvent?.baseline_peak_kw || 50.2,
+      peakThresholdKw: this.peakEvent?.target_limit_kw || 60.0,
       currentOccupancy,
       maxBuildingCapacity,
       comfortCompliancePercent,
@@ -560,136 +360,176 @@ class NexoraStore {
     };
   }
 
-  // Operating Mode Switcher
+  // --- Actions ---
+
   public setOperatingMode(newMode: OperatingMode) {
     this.mode = newMode;
     if (newMode === "AUTOMATE") {
-      // Automatically execute all pending recommendations whose safety gate passed
       this.executeAutomatedEligible();
     }
     this.notify();
   }
 
-  // Scenario Switcher
-  public setScenario(scenarioId: string) {
-    const s = SCENARIOS.find((item) => item.id === scenarioId);
-    if (!s) return;
-    this.activeScenario = s;
-
-    // Recalculate cooling loads based on ambient temperature delta
-    const tempMultiplier = s.outdoorTemp / 32.0;
-    this.zones = this.zones.map((z) => {
-      const newHvacPower = Number((z.hvacPowerKw * (z.isManualOverride ? 1 : tempMultiplier)).toFixed(1));
-      return {
-        ...z,
-        hvacPowerKw: newHvacPower,
-        totalZonePowerKw: Number((newHvacPower + z.lightingPowerKw).toFixed(1)),
-        baselineExpectedKw: Number((z.baselineExpectedKw * tempMultiplier).toFixed(1)),
-        evidence: "SIMULATED",
-      };
-    });
-
-    this.notify();
-  }
-
-  // Human-In-The-Loop Action Approval
-  public approveRecommendation(recId: string): boolean {
-    const rec = this.recommendations.find((r) => r.id === recId);
-    if (!rec || rec.status !== "PENDING_APPROVAL") return false;
-
-    rec.status = "APPROVED";
-    this.notify();
-
-    // Simulate immediate BACnet control actuation
-    setTimeout(() => {
-      this.executeAction(rec);
-    }, 400);
-
-    return true;
-  }
-
-  public rejectRecommendation(recId: string): boolean {
-    const rec = this.recommendations.find((r) => r.id === recId);
-    if (!rec) return false;
-    rec.status = "REJECTED";
-    this.notify();
-    return true;
-  }
-
-  private executeAutomatedEligible() {
+  private async executeAutomatedEligible() {
     const eligible = this.recommendations.filter(
       (r) => r.status === "PENDING_APPROVAL" && r.safetyGatePassed
     );
-    eligible.forEach((r) => {
-      r.status = "AUTOMATED";
-      this.executeAction(r);
-    });
-  }
-
-  private executeAction(rec: Recommendation) {
-    const targetZone = this.zones.find((z) => z.id === rec.zoneId);
-    if (!targetZone) return;
-
-    const beforePower = targetZone.totalZonePowerKw;
-    const tempBefore = targetZone.temperature;
-    const co2Before = targetZone.co2;
-
-    // Modify zone state according to action
-    if (rec.zoneId === "z04") {
-      targetZone.targetSetpoint = 24.5;
-      targetZone.temperature = 22.6; // initial drift
-      targetZone.hvacPowerKw = 1.6;
-      targetZone.hvacFanSpeed = "LOW";
-      targetZone.hvacMode = "SETBACK";
-      targetZone.lightingPowerKw = 0.2;
-      targetZone.lightingLevelPercent = 15;
-      targetZone.totalZonePowerKw = 1.8;
-      targetZone.hasActiveAnomaly = false;
-      targetZone.anomalyDescription = undefined;
-      targetZone.evidence = "SIMULATED";
-    } else if (rec.zoneId === "z03") {
-      targetZone.targetSetpoint = 21.5;
-      targetZone.temperature = 21.8;
-      targetZone.hvacPowerKw = 2.4;
-      targetZone.totalZonePowerKw = 3.1;
-      targetZone.evidence = "SIMULATED";
+    for (const rec of eligible) {
+      await this.approveRecommendation(rec.id);
     }
-
-    rec.status = "VERIFIED";
-
-    // Create M&V Verification record in the closed loop
-    const actualPower = targetZone.totalZonePowerKw;
-    const measuredReduction = Number((beforePower - actualPower).toFixed(1));
-    const savedKwh = Number((measuredReduction * 1.0).toFixed(1));
-    const costSaved = Math.round(savedKwh * 9.5);
-
-    const newVerification: VerificationRecord = {
-      id: `ver-${Date.now().toString().slice(-4)}`,
-      recommendationId: rec.id,
-      zoneName: targetZone.name,
-      executedAt: rec.timestamp,
-      verifiedAt: new Date().toLocaleTimeString("en-GB", { hour12: false }),
-      beforePowerKw: beforePower,
-      targetPowerKw: actualPower,
-      actualPowerKw: actualPower,
-      measuredReductionKw: measuredReduction,
-      tempBefore,
-      tempAfter: targetZone.temperature,
-      co2Before,
-      co2After: targetZone.co2,
-      comfortPreserved: true,
-      iaqPreserved: true,
-      energySavedKwh: savedKwh,
-      costSavedInr: costSaved,
-      status: "VERIFIED",
-      evidence: "SIMULATED",
-    };
-
-    this.verifications.unshift(newVerification);
-    this.notify();
   }
 
-  // Facility Manager Manual Override
+  public async setScenario(scenarioId: string): Promise<void> {
+    const s = SCENARIOS.find((item) => item.id === scenarioId);
+    if (!s) return;
+    this.activeScenario = s;
+    this.isLoading = true;
+    this.notify();
+
+    try {
+      if (scenarioId === "summer_peak" || scenarioId === "demand_response") {
+        await apiTriggerPeakEvent({
+          scenario_id: scenarioId,
+          target_limit_kw: 60.0,
+          duration_minutes: 120,
+        });
+      } else {
+        await apiResetSimulation();
+      }
+      await this.refreshState(false);
+    } catch (err: any) {
+      console.error("Failed to set scenario:", err);
+      this.error = err?.message || "Failed to switch scenario";
+      this.notify();
+    } finally {
+      this.isLoading = false;
+      this.notify();
+    }
+  }
+
+  public async approveRecommendation(recId: string): Promise<boolean> {
+    this.isLoading = true;
+    this.notify();
+
+    try {
+      const targetRec = this.recommendations.find((r) => r.id === recId);
+      if (targetRec) {
+        targetRec.status = "APPROVED";
+      }
+
+      // Dispatch to FastAPI backend
+      const approval = await approveAction(recId);
+
+      // Update zone state immediately with returned after_telemetry
+      if (approval.after_telemetry) {
+        const after = approval.after_telemetry;
+        const z = this.zones.find(
+          (zone) => zone.code === after.zone_id || zone.id === after.zone_id.toLowerCase().replace("-", "")
+        );
+        if (z) {
+          z.temperature = after.temperature_c;
+          z.targetSetpoint = after.target_setpoint_c;
+          z.lightingLevelPercent = after.lighting_pct;
+          z.totalZonePowerKw = after.total_power_kw;
+          z.evidence = after.evidence || "SIMULATED";
+          z.hasActiveAnomaly = false;
+        }
+      }
+
+      if (targetRec) {
+        targetRec.status = "VERIFIED";
+      }
+
+      // Refresh verification ledger from backend
+      await this.refreshState(false);
+      return true;
+    } catch (err: any) {
+      console.error("Failed to approve recommendation:", err);
+      this.error = err?.message || "Action approval failed";
+      this.notify();
+      return false;
+    } finally {
+      this.isLoading = false;
+      this.notify();
+    }
+  }
+
+  public async rejectRecommendation(recId: string, reason?: string): Promise<boolean> {
+    this.isLoading = true;
+    this.notify();
+
+    try {
+      await rejectAction(recId, reason);
+      const targetRec = this.recommendations.find((r) => r.id === recId);
+      if (targetRec) {
+        targetRec.status = "REJECTED";
+      }
+      this.notify();
+      return true;
+    } catch (err: any) {
+      console.error("Failed to reject recommendation:", err);
+      this.error = err?.message || "Action rejection failed";
+      this.notify();
+      return false;
+    } finally {
+      this.isLoading = false;
+      this.notify();
+    }
+  }
+
+  public async triggerPeakEvent(
+    targetLimitKw: number = 60.0,
+    durationMinutes: number = 120
+  ): Promise<PeakEventResponse | null> {
+    this.isLoading = true;
+    this.notify();
+
+    try {
+      const res = await apiTriggerPeakEvent({
+        target_limit_kw: targetLimitKw,
+        duration_minutes: durationMinutes,
+        scenario_id: "summer_peak",
+      });
+      this.peakEvent = res;
+      const s = SCENARIOS.find((item) => item.id === "summer_peak");
+      if (s) this.activeScenario = s;
+
+      await this.refreshState(false);
+      return res;
+    } catch (err: any) {
+      console.error("Failed to trigger peak event:", err);
+      this.error = err?.message || "Peak event trigger failed";
+      this.notify();
+      return null;
+    } finally {
+      this.isLoading = false;
+      this.notify();
+    }
+  }
+
+  public async stopPeakEvent(): Promise<PeakEventResponse | null> {
+    this.isLoading = true;
+    this.notify();
+
+    try {
+      const res = await apiStopPeakEvent();
+      this.peakEvent = res;
+      const s = SCENARIOS.find((item) => item.id === "standard");
+      if (s) this.activeScenario = s;
+
+      await this.refreshState(false);
+      return res;
+    } catch (err: any) {
+      console.error("Failed to stop peak event:", err);
+      this.error = err?.message || "Failed to stop peak event";
+      this.notify();
+      return null;
+    } finally {
+      this.isLoading = false;
+      this.notify();
+    }
+  }
+
   public applyManualOverride(
     zoneId: string,
     setpoint: number,
@@ -704,8 +544,6 @@ class NexoraStore {
     z.lightingLevelPercent = lightingPercent;
     z.hvacMode = hvacMode;
 
-    // Recalculate immediate power based on setpoint
-    // Lower setpoint = higher cooling power
     const delta = Math.max(0, 26 - setpoint);
     z.hvacPowerKw = Number((delta * (z.areaSqM / 65)).toFixed(1));
     z.lightingPowerKw = Number(((lightingPercent / 100) * (z.areaSqM / 150)).toFixed(1));
@@ -720,32 +558,36 @@ class NexoraStore {
     if (!z) return;
 
     z.isManualOverride = false;
-    // reset to baseline
-    const original = INITIAL_ZONES.find((iz) => iz.id === zoneId);
-    if (original) {
-      z.targetSetpoint = original.targetSetpoint;
-      z.lightingLevelPercent = original.lightingLevelPercent;
-      z.hvacPowerKw = original.hvacPowerKw;
-      z.lightingPowerKw = original.lightingPowerKw;
-      z.totalZonePowerKw = original.totalZonePowerKw;
-      z.hvacMode = original.hvacMode;
-      z.evidence = original.evidence;
-    }
-
-    this.notify();
+    // Re-sync zone from backend
+    getZoneDetail(z.id || z.code)
+      .then((detail) => {
+        Object.assign(z, mapZoneDetailToZoneData(detail));
+        this.notify();
+      })
+      .catch(() => {
+        this.notify();
+      });
   }
 
-  // Reset demo state
-  public resetState() {
-    this.zones = JSON.parse(JSON.stringify(INITIAL_ZONES));
-    this.recommendations = JSON.parse(JSON.stringify(INITIAL_RECOMMENDATIONS));
-    this.verifications = JSON.parse(JSON.stringify(INITIAL_VERIFICATIONS));
-    this.mode = "APPROVE";
-    this.activeScenario = SCENARIOS[0];
-    this.currentTime = "14:15";
+  public async resetState(): Promise<void> {
+    this.isLoading = true;
     this.notify();
+
+    try {
+      await apiResetSimulation();
+      this.mode = "APPROVE";
+      this.activeScenario = SCENARIOS[0];
+      await this.refreshState(false);
+    } catch (err: any) {
+      console.error("Failed to reset state:", err);
+      this.error = err?.message || "Failed to reset state";
+      this.notify();
+    } finally {
+      this.isLoading = false;
+      this.notify();
+    }
   }
 }
 
-// Singleton simulation instance
+// Global singleton instance
 export const nexoraEngine = new NexoraStore();

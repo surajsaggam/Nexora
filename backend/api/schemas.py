@@ -268,6 +268,56 @@ class SimulationEventResponse(BaseModel):
     evidence: str = "SIMULATED"
 
 
+class PeakEventRequest(BaseModel):
+    duration_minutes: Optional[int] = 120
+    target_limit_kw: Optional[float] = 60.0
+    scenario_id: Optional[str] = "summer_peak"
+    zone_id: Optional[str] = None
+    timestamp_iso: Optional[str] = None
+
+
+class PeakEventResponse(BaseModel):
+    """
+    Standardized NEXORA Peak Demand Response Event Record:
+    {
+      "event_id": "...",
+      "status": "ACTIVE",
+      "target_limit_kw": 60,
+      "baseline_peak_kw": ...,
+      "current_peak_kw": ...,
+      "peak_reduction_kw": ...,
+      "participating_zones": [...],
+      "protected_zones": [...],
+      "actions_executed": [...],
+      "comfort_pass": true,
+      "iaq_pass": true,
+      "evidence": "SIMULATED"
+    }
+    """
+    event_id: str
+    status: str
+    target_limit_kw: float
+    baseline_peak_kw: float
+    current_peak_kw: float
+    peak_reduction_kw: float
+    participating_zones: List[str]
+    protected_zones: List[str]
+    actions_executed: List[Dict[str, Any]]
+    comfort_pass: bool
+    iaq_pass: bool
+    evidence: str = "SIMULATED"
+
+    # Contextual metadata
+    duration_minutes: Optional[int] = None
+    started_at: Optional[str] = None
+    ended_at: Optional[str] = None
+    scenario_id: Optional[str] = None
+    high_demand_detected: Optional[bool] = None
+    utilization_pct: Optional[float] = None
+
+    model_config = ConfigDict(extra="ignore")
+
+
 class HealthResponse(BaseModel):
     status: str
     service: str

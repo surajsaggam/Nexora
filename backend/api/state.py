@@ -37,6 +37,7 @@ from backend.simulator.physics import BuildingSnapshot, ZoneState, step_zone_phy
 from backend.simulator.weather import compute_weather
 from backend.verification.ledger import VerificationLedger
 from backend.verification.mv import MVEngine, MVVerificationRecord
+from backend.simulation.peak_event import PeakEventManager, PeakEventRecord
 
 
 class NexoraIntegrationService:
@@ -47,7 +48,7 @@ class NexoraIntegrationService:
     """
 
     def __init__(self):
-        self.lock = threading.Lock()
+        self.lock = threading.RLock()
         self.scenario_id = "standard"
         self.simulator = NexoraBuildingSimulator(scenario_id=self.scenario_id)
         self.ml_service = MLIntelligenceService()
@@ -111,6 +112,13 @@ class NexoraIntegrationService:
             self.control_executor = SimulatedBMSControlExecutor(
                 simulator=self.simulator,
                 state_tracker=self.control_tracker,
+            )
+            self.peak_event_manager = PeakEventManager(
+                simulator=self.simulator,
+                decision_engine=self.decision_engine,
+                safety_gate=self.safety_gate,
+                control_executor=self.control_executor,
+                control_tracker=self.control_tracker,
             )
             self.verification_ledger.clear()
             self.recommendations.clear()
@@ -681,6 +689,55 @@ class NexoraIntegrationService:
             "current_power_kw": 5.60,
             "evidence": "SIMULATED",
         }
+
+    def trigger_peak_demand_event(
+        self,
+        duration_minutes: int = 120,
+        target_limit_kw: float = 60.0,
+        scenario_id: str = "summer_peak",
+    ) -> PeakEventRecord:
+        """Triggers the building peak event / demand response simulation layer."""
+        with self.lock:
+            # Synchronize peak event manager with current simulator & executor
+            self.peak_event_manager.simulator = self.simulator
+            self.peak_event_manager.control_executor = self.control_executor
+            self.peak_event_manager.control_tracker = self.control_tracker
+
+            record = self.peak_event_manager.trigger_peak_event(
+                duration_minutes=duration_minutes,
+                target_limit_kw=target_limit_kw,
+                scenario_id=scenario_id,
+                timestamp=self.current_time,
+            )
+            self.current_snapshot = self.simulator.step(
+                dt=self.current_time + timedelta(minutes=15),
+                dt_hours=0.25,
+                inject_anomalies=False,
+            )
+            return record
+
+    def get_peak_demand_event(self) -> PeakEventRecord:
+        """Returns the active or latest peak event record, or triggers initial event if none exists."""
+        with self.lock:
+            rec = self.peak_event_manager.get_current_event()
+            if not rec:
+                rec = self.trigger_peak_demand_event(
+                    duration_minutes=120,
+                    target_limit_kw=60.0,
+                    scenario_id="summer_peak",
+                )
+            return rec
+
+    def stop_peak_demand_event(self) -> PeakEventRecord:
+        """Stops active peak event, restoring baseline thermostat setpoints and lighting."""
+        with self.lock:
+            record = self.peak_event_manager.stop_peak_event(timestamp=self.current_time)
+            self.current_snapshot = self.simulator.step(
+                dt=self.current_time,
+                dt_hours=0.25,
+                inject_anomalies=True,
+            )
+            return record
 
 
 # Global singleton instance

@@ -12,9 +12,11 @@ interface Props {
 }
 
 export function WhatIfEvaluatorModal({ isOpen, onClose }: Props) {
-  const { activeScenario, setScenario } = useNexora();
+  const { activeScenario, setScenario, peakEvent, stopPeakEvent, isLoading } = useNexora();
 
   if (!isOpen) return null;
+
+  const isPeakActive = peakEvent?.status === "ACTIVE";
 
   return (
     <div className="fixed inset-0 z-50 bg-black/40 backdrop-blur-sm flex items-center justify-center p-4">
@@ -41,6 +43,43 @@ export function WhatIfEvaluatorModal({ isOpen, onClose }: Props) {
             <X className="size-4" />
           </button>
         </div>
+
+        {/* Live Peak Event Status Banner if Active */}
+        {isPeakActive && peakEvent && (
+          <div className="mb-4 p-3.5 rounded-2xl bg-[#C05621]/10 border border-[#C05621]/30">
+            <div className="flex items-center justify-between mb-2">
+              <div className="flex items-center gap-2">
+                <span className="size-2 rounded-full bg-[#C05621] animate-pulse" />
+                <span className="text-xs font-bold text-[#C05621] uppercase tracking-wide">
+                  Simulated Peak Demand Event Active
+                </span>
+              </div>
+              <button
+                disabled={isLoading}
+                onClick={async () => {
+                  await stopPeakEvent();
+                }}
+                className="text-[11px] font-semibold px-2.5 py-1 rounded-full bg-[#C05621] text-white hover:opacity-90 transition-opacity disabled:opacity-50"
+              >
+                {isLoading ? "Stopping..." : "Stop Peak Event"}
+              </button>
+            </div>
+            <div className="grid grid-cols-3 gap-2 text-xs">
+              <div className="bg-white/80 dark:bg-black/30 p-2 rounded-xl">
+                <div className="text-[10px] text-[#6B6864] dark:text-[#A4A09B]">Target Limit</div>
+                <div className="font-bold font-mono">{peakEvent.target_limit_kw.toFixed(1)} kW</div>
+              </div>
+              <div className="bg-white/80 dark:bg-black/30 p-2 rounded-xl">
+                <div className="text-[10px] text-[#6B6864] dark:text-[#A4A09B]">Avoided Peak</div>
+                <div className="font-bold font-mono text-[#15803D]">-{peakEvent.peak_reduction_kw.toFixed(1)} kW</div>
+              </div>
+              <div className="bg-white/80 dark:bg-black/30 p-2 rounded-xl">
+                <div className="text-[10px] text-[#6B6864] dark:text-[#A4A09B]">Comfort Check</div>
+                <div className="font-bold text-[#15803D]">{peakEvent.comfort_pass ? "PASSED" : "VIOLATION"}</div>
+              </div>
+            </div>
+          </div>
+        )}
 
         <p className="text-xs text-[#6B6864] dark:text-[#A4A09B] mb-4">
           Select a simulated operating condition to evaluate how NEXORA&apos;s constrained decision engine responds to grid stress, extreme weather, and altered occupancy patterns.

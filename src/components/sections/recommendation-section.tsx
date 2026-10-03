@@ -6,10 +6,13 @@ import { Zap, CheckCircle2, ShieldCheck } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 export function RecommendationSection() {
-  const { recommendations, approveRecommendation, rejectRecommendation } = useNexora();
+  const { recommendations, approveRecommendation, rejectRecommendation, isLoading } = useNexora();
 
   // Primary demo recommendation: Conference Suite B
-  const rec = recommendations.find((r) => r.id === "rec-z04-01") || recommendations[0];
+  const rec =
+    recommendations.find(
+      (r) => r.zoneId === "z04" || r.id.includes("z04") || r.id === "rec-z04-01"
+    ) || recommendations[0];
 
   if (!rec) return null;
 
@@ -143,16 +146,18 @@ export function RecommendationSection() {
               <div className="flex items-center gap-3">
                 <button
                   onClick={() => rejectRecommendation(rec.id)}
-                  className="px-5 py-2.5 rounded-full text-xs font-semibold border border-[#E0DBD4] dark:border-[#333330] hover:bg-[#EAE6E1] dark:hover:bg-[#2A2A28] text-[#6B6864] transition-colors btn-press cursor-pointer"
+                  disabled={isLoading}
+                  className="px-5 py-2.5 rounded-full text-xs font-semibold border border-[#E0DBD4] dark:border-[#333330] hover:bg-[#EAE6E1] dark:hover:bg-[#2A2A28] text-[#6B6864] transition-colors btn-press cursor-pointer disabled:opacity-50"
                 >
                   Dismiss
                 </button>
                 <button
                   onClick={() => approveRecommendation(rec.id)}
-                  className="bg-[#141413] text-[#F4F1EE] dark:bg-[#F4F1EE] dark:text-[#141413] px-6 py-2.5 rounded-full text-xs font-bold tracking-tight hover:opacity-90 transition-all btn-press shadow-md flex items-center gap-2 cursor-pointer"
+                  disabled={isLoading}
+                  className="bg-[#141413] text-[#F4F1EE] dark:bg-[#F4F1EE] dark:text-[#141413] px-6 py-2.5 rounded-full text-xs font-bold tracking-tight hover:opacity-90 transition-all btn-press shadow-md flex items-center gap-2 cursor-pointer disabled:opacity-60"
                 >
-                  <Zap className="size-3.5 text-[#C05621]" />
-                  <span>Approve &amp; Dispatch</span>
+                  <Zap className={cn("size-3.5 text-[#C05621]", isLoading && "animate-spin")} />
+                  <span>{isLoading ? "Dispatching..." : "Approve & Dispatch"}</span>
                 </button>
               </div>
             )}

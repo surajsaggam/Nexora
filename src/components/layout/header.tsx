@@ -14,7 +14,7 @@ export function Header({
   onOpenScenarioModal: () => void;
   onOpenZones?: () => void;
 }) {
-  const { mode, setOperatingMode, activeScenario, currentTime, resetState } = useNexora();
+  const { mode, setOperatingMode, activeScenario, currentTime, resetState, isBackendAvailable } = useNexora();
 
   const modes: { id: OperatingMode; label: string; desc: string }[] = [
     { id: "MONITOR", label: "Monitor", desc: "Telemetry only" },
