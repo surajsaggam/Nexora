@@ -104,15 +104,14 @@ export function CaseStudyFlipStack({
         <AnimatePresence mode="wait">
           <motion.div
             key={currentItem.id}
-            initial={{ opacity: 0, y: 16, scale: 0.98 }}
+            initial={{ opacity: 0, y: 12, scale: 0.99 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: -16, scale: 0.98 }}
+            exit={{ opacity: 0, y: -12, scale: 0.99 }}
             transition={{
-              type: "spring",
-              damping: 24,
-              stiffness: 260,
+              duration: 0.15,
+              ease: "easeOut",
             }}
-            className="w-full bg-white dark:bg-[#1D1D1B] border border-[#E0DBD4] dark:border-[#333330] rounded-3xl p-6 sm:p-10 shadow-sm"
+            className="w-full bg-white dark:bg-[#1D1D1B] border border-[#E0DBD4] dark:border-[#333330] rounded-3xl p-6 sm:p-10 shadow-sm card-hover-lift"
           >
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
               {/* Left Column: Editorial Story Copy */}

@@ -66,7 +66,7 @@ export function ControlSummarySection({
         </div>
 
         {/* Operating Autonomy Levels */}
-        <div className="bg-white dark:bg-[#1D1D1B] border border-[#E0DBD4] dark:border-[#333330] rounded-3xl p-6 sm:p-10 shadow-sm mb-12">
+        <div className="bg-white dark:bg-[#1D1D1B] border border-[#E0DBD4] dark:border-[#333330] rounded-3xl p-6 sm:p-10 shadow-sm mb-12 card-hover-lift">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-6 mb-8 border-b border-[#E0DBD4] dark:border-[#333330]">
             <div>
               <span className="text-xs font-semibold text-[#6B6864] dark:text-[#A4A09B] uppercase tracking-wider">
@@ -126,7 +126,7 @@ export function ControlSummarySection({
         </div>
 
         {/* Action Center Banner */}
-        <div className="bg-[#FAF8F5] dark:bg-[#242422] border border-[#E0DBD4] dark:border-[#333330] rounded-3xl p-8 sm:p-12 shadow-sm flex flex-col lg:flex-row lg:items-center justify-between gap-8 mb-12">
+        <div className="bg-[#FAF8F5] dark:bg-[#242422] border border-[#E0DBD4] dark:border-[#333330] rounded-3xl p-8 sm:p-12 shadow-sm flex flex-col lg:flex-row lg:items-center justify-between gap-8 mb-12 card-hover-lift">
           <div className="max-w-xl">
             <span className="text-xs font-mono uppercase tracking-wider text-[#C05621] font-bold">
               Facility Toolset

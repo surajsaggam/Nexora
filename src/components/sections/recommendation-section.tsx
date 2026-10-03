@@ -41,7 +41,7 @@ export function RecommendationSection() {
         {/* Focused Interactive Card */}
         <div
           className={cn(
-            "bg-white dark:bg-[#1D1D1B] border rounded-3xl p-6 sm:p-10 shadow-sm transition-all duration-300",
+            "bg-white dark:bg-[#1D1D1B] border rounded-3xl p-6 sm:p-10 shadow-sm transition-all duration-300 card-hover-lift",
             isPending
               ? "border-[#E0DBD4] dark:border-[#333330]"
               : isVerified

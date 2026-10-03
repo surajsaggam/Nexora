@@ -31,7 +31,7 @@ export function VerificationSection() {
 
         {/* 4-Step Before → Action → After → Verified Impact Journey */}
         {activeRecord && (
-          <div className="bg-white dark:bg-[#1D1D1B] border border-[#E0DBD4] dark:border-[#333330] rounded-3xl p-6 sm:p-10 shadow-sm mb-10">
+          <div className="bg-white dark:bg-[#1D1D1B] border border-[#E0DBD4] dark:border-[#333330] rounded-3xl p-6 sm:p-10 shadow-sm mb-10 card-hover-lift">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-6 mb-8 border-b border-[#E0DBD4] dark:border-[#333330]">
               <div>
                 <span className="text-xs font-semibold text-[#6B6864] dark:text-[#A4A09B] uppercase tracking-wider">

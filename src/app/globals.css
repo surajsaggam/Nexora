@@ -152,6 +152,24 @@
   transform: scale(0.975);
 }
 
+/* Subtle premium card hover lift interaction */
+.card-hover-lift {
+  position: relative;
+  transition: transform 180ms ease-out, box-shadow 180ms ease-out, border-color 180ms ease-out;
+  will-change: transform;
+}
+.card-hover-lift:hover {
+  z-index: 10;
+  transform: translateY(-4px) scale(1.018);
+  box-shadow: 0 16px 42px -10px rgba(20, 20, 19, 0.14), 0 4px 12px -2px rgba(20, 20, 19, 0.06);
+  border-color: rgba(20, 20, 19, 0.22);
+}
+.dark .card-hover-lift:hover {
+  z-index: 10;
+  box-shadow: 0 16px 42px -10px rgba(0, 0, 0, 0.45), 0 4px 12px -2px rgba(0, 0, 0, 0.3);
+  border-color: rgba(244, 241, 238, 0.28);
+}
+
 /* Completely suppress floating dev tools indicator */
 [data-nextjs-dev-indicator],
 [data-nextjs-toast],

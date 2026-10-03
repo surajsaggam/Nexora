@@ -149,7 +149,7 @@ export function HeroSection({
           whileInView={{ opacity: 1, y: 0, scale: 1 }}
           viewport={{ once: true, margin: "-40px" }}
           transition={{ duration: 0.85, ease: [0.2, 0, 0, 1] }}
-          className="relative rounded-[32px] sm:rounded-[40px] overflow-hidden border border-[#E0DBD4] dark:border-[#333330] shadow-[0_20px_50px_-16px_rgba(20,20,19,0.12)] bg-[#141413]"
+          className="relative rounded-[32px] sm:rounded-[40px] overflow-hidden border border-[#E0DBD4] dark:border-[#333330] shadow-[0_20px_50px_-16px_rgba(20,20,19,0.12)] bg-[#141413] card-hover-lift"
         >
           <div className="relative aspect-[16/9] sm:aspect-[21/9] w-full max-h-[420px]">
             <Image

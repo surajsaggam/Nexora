@@ -61,7 +61,7 @@ export function EnergySection({
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true, margin: "-40px" }}
           transition={{ duration: 0.8, ease: [0.2, 0, 0, 1] }}
-          className="bg-white dark:bg-[#1D1D1B] border border-[#E0DBD4] dark:border-[#333330] rounded-[32px] sm:rounded-[36px] p-6 sm:p-10 shadow-sm"
+          className="bg-white dark:bg-[#1D1D1B] border border-[#E0DBD4] dark:border-[#333330] rounded-[32px] sm:rounded-[36px] p-6 sm:p-10 shadow-sm card-hover-lift"
         >
           {/* Chart Controls & Filter Pill */}
           <div className="flex flex-wrap items-center justify-between gap-4 mb-8 pb-5 border-b border-[#E0DBD4]/70 dark:border-[#333330]/70">

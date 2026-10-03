@@ -3,7 +3,7 @@
 import React from "react";
 import { useNexora } from "@/hooks/use-nexora";
 import { OperatingMode } from "@/types/nexora";
-import { Building2, Sliders, RotateCcw } from "lucide-react";
+import { Sliders, RotateCcw } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { NexoraLogo } from "@/components/ui/nexora-logo";
 
@@ -26,28 +26,12 @@ export function Header({
   return (
     <header className="relative w-full pt-4 pb-2 px-4 sm:px-6 lg:px-8 bg-transparent">
       <div className="mx-auto max-w-7xl bg-white/90 dark:bg-[#1D1D1B]/95 backdrop-blur-md border border-[#E0DBD4] dark:border-[#333330] rounded-full px-5 py-3 shadow-[0_4px_24px_-4px_rgba(20,20,19,0.06)] flex items-center justify-between gap-4">
-        {/* Left: Brand & Facility Location */}
-        <div className="flex items-center gap-3.5 shrink-0">
+        {/* Left: Brand Only */}
+        <div className="flex items-center gap-3 shrink-0">
           <NexoraLogo size="md" variant="mark" />
-          <div>
-            <div className="flex items-center gap-2">
-              <span className="font-semibold tracking-tight text-lg text-[#141413] dark:text-[#F4F1EE]">
-                NEXORA
-              </span>
-              <span className="text-[11px] uppercase tracking-wider font-semibold px-2 py-0.5 rounded-full bg-[#EAE6E1] dark:bg-[#2A2A28] text-[#6B6864] dark:text-[#A4A09B]">
-                Building Intelligence
-              </span>
-            </div>
-            <button
-              onClick={onOpenZones}
-              className="flex items-center gap-1.5 text-xs text-[#6B6864] dark:text-[#A4A09B] hover:text-[#141413] dark:hover:text-[#F4F1EE] transition-colors text-left cursor-pointer"
-              title="Click to inspect all 8 zones"
-            >
-              <Building2 className="size-3" />
-              <span>Apex Horizon Complex &bull; Floor 4 (1,000 m²)</span>
-              <span className="text-[#C05621] font-medium font-mono">&bull; {currentTime} IST</span>
-            </button>
-          </div>
+          <span className="font-semibold tracking-tight text-lg text-[#141413] dark:text-[#F4F1EE]">
+            NEXORA
+          </span>
         </div>
 
         {/* Center: Human-In-The-Loop Control Pill */}
