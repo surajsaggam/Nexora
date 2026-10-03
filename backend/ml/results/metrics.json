@@ -1,0 +1,29 @@
+{
+  "timestamp": "2026-10-03T19:24:54.922924",
+  "dataset": "backend/data/simulated/nexora_apex_floor4_standard_zones.parquet",
+  "train_rows": 55296,
+  "holdout_rows": 13824,
+  "occupancy_forecaster": {
+    "mae_headcount": 0.172,
+    "rmse_headcount": 0.354,
+    "r2_score": 0.997,
+    "holdout_samples": 13792
+  },
+  "energy_baseline": {
+    "mae_kw": 0.018,
+    "rmse_kw": 0.058,
+    "r2_score": 0.9995,
+    "cv_rmse_pct": 1.55,
+    "nmbe_pct": 0.12,
+    "ashrae_14_compliant": true,
+    "holdout_samples": 13824
+  },
+  "anomaly_detector": {
+    "precision": 1.0,
+    "recall": 1.0,
+    "f1_score": 1.0,
+    "total_anomalies_in_holdout": 56,
+    "detected_anomalies": 56
+  },
+  "evidence": "MODELLED"
+}
