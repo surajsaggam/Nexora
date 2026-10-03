@@ -202,7 +202,7 @@ function renderDiagram(type: CaseStudyItem["visualType"]) {
               </span>
             </div>
             <span className="text-[10px] font-mono text-[#15803D] bg-[#15803D]/10 px-2 py-0.5 rounded-full font-bold">
-              ● REAL-TIME FEED
+              ● SIMULATED SENSOR FEED
             </span>
           </div>
 
@@ -338,7 +338,7 @@ function renderDiagram(type: CaseStudyItem["visualType"]) {
               </span>
             </div>
             <span className="text-[10px] font-mono text-[#15803D] bg-[#15803D]/10 px-2 py-0.5 rounded-full font-bold">
-              IPMVP OPTION C
+              IPMVP OPTION C (SIMULATED)
             </span>
           </div>
 

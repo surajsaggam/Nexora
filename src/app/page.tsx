@@ -24,7 +24,7 @@ export default function Home() {
 
   return (
     <div className="min-h-screen bg-[#F4F1EE] dark:bg-[#141413] text-[#141413] dark:text-[#F4F1EE] flex flex-col font-sans selection:bg-[#C05621]/20 selection:text-[#C05621]">
-      {/* 1. Sticky Stadium Navigation Header */}
+      {/* 1. Stadium Navigation Header (Scrolls naturally with page) */}
       <Header
         onOpenScenarioModal={() => setIsScenarioModalOpen(true)}
         onOpenZones={() => setIsZoneModalOpen(true)}

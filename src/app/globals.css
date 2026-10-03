@@ -151,3 +151,14 @@
 .btn-press:active {
   transform: scale(0.975);
 }
+
+/* Completely suppress floating dev tools indicator */
+[data-nextjs-dev-indicator],
+[data-nextjs-toast],
+nextjs-portal,
+#__next-build-watcher {
+  display: none !important;
+  visibility: hidden !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
+}

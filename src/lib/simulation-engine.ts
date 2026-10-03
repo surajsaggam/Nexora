@@ -75,7 +75,7 @@ const INITIAL_ZONES: ZoneData[] = [
     baselineExpectedKw: 10.8,
     isManualOverride: false,
     hasActiveAnomaly: false,
-    evidence: "MEASURED",
+    evidence: "SIMULATED",
   },
   {
     id: "z02",
@@ -101,7 +101,7 @@ const INITIAL_ZONES: ZoneData[] = [
     baselineExpectedKw: 8.9,
     isManualOverride: false,
     hasActiveAnomaly: false,
-    evidence: "MEASURED",
+    evidence: "SIMULATED",
   },
   {
     id: "z03",
@@ -127,7 +127,7 @@ const INITIAL_ZONES: ZoneData[] = [
     baselineExpectedKw: 4.6,
     isManualOverride: false,
     hasActiveAnomaly: false,
-    evidence: "MEASURED",
+    evidence: "SIMULATED",
   },
   {
     id: "z04",
@@ -154,7 +154,7 @@ const INITIAL_ZONES: ZoneData[] = [
     isManualOverride: false,
     hasActiveAnomaly: true,
     anomalyDescription: "Meeting vacated 42m early. High HVAC cooling & 100% lighting active with 0 occupants.",
-    evidence: "MEASURED",
+    evidence: "SIMULATED",
   },
   {
     id: "z05",
@@ -180,7 +180,7 @@ const INITIAL_ZONES: ZoneData[] = [
     baselineExpectedKw: 5.8,
     isManualOverride: false,
     hasActiveAnomaly: false,
-    evidence: "MEASURED",
+    evidence: "SIMULATED",
   },
   {
     id: "z06",
@@ -206,7 +206,7 @@ const INITIAL_ZONES: ZoneData[] = [
     baselineExpectedKw: 4.8,
     isManualOverride: false,
     hasActiveAnomaly: false,
-    evidence: "MEASURED",
+    evidence: "SIMULATED",
   },
   {
     id: "z07",
@@ -232,7 +232,7 @@ const INITIAL_ZONES: ZoneData[] = [
     baselineExpectedKw: 5.3,
     isManualOverride: false,
     hasActiveAnomaly: false,
-    evidence: "MEASURED",
+    evidence: "SIMULATED",
   },
   {
     id: "z08",
@@ -258,7 +258,7 @@ const INITIAL_ZONES: ZoneData[] = [
     baselineExpectedKw: 2.3,
     isManualOverride: false,
     hasActiveAnomaly: false,
-    evidence: "MEASURED",
+    evidence: "SIMULATED",
   },
 ];
 
@@ -405,7 +405,7 @@ const INITIAL_VERIFICATIONS: VerificationRecord[] = [
     energySavedKwh: 2.4,
     costSavedInr: 22.8,
     status: "VERIFIED",
-    evidence: "MEASURED",
+    evidence: "SIMULATED",
   },
   {
     id: "ver-002",
@@ -426,7 +426,7 @@ const INITIAL_VERIFICATIONS: VerificationRecord[] = [
     energySavedKwh: 1.9,
     costSavedInr: 18.05,
     status: "VERIFIED",
-    evidence: "MEASURED",
+    evidence: "SIMULATED",
   },
 ];
 
@@ -729,7 +729,7 @@ class NexoraStore {
       z.lightingPowerKw = original.lightingPowerKw;
       z.totalZonePowerKw = original.totalZonePowerKw;
       z.hvacMode = original.hvacMode;
-      z.evidence = "MEASURED";
+      z.evidence = original.evidence;
     }
 
     this.notify();

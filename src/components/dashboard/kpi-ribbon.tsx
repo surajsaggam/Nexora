@@ -20,7 +20,7 @@ export function KpiRibbon() {
             <span>Active Power</span>
           </div>
           <span className="text-[10px] font-mono uppercase px-2 py-0.5 rounded-full bg-[#FAF8F5] dark:bg-[#2A2A28] border border-[#E0DBD4] dark:border-[#333330]">
-            MEASURED
+            SIMULATED
           </span>
         </div>
         <div className="flex items-baseline gap-2">
@@ -50,7 +50,7 @@ export function KpiRibbon() {
             <span>Peak Demand</span>
           </div>
           <span className="text-[10px] font-mono uppercase px-2 py-0.5 rounded-full bg-[#FAF8F5] dark:bg-[#2A2A28] border border-[#E0DBD4] dark:border-[#333330]">
-            MEASURED
+            SIMULATED
           </span>
         </div>
         <div className="flex items-baseline gap-2">

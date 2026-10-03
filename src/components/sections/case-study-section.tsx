@@ -22,8 +22,8 @@ const CASE_STUDY_ITEMS: CaseStudyItem[] = [
     eyebrow: "PREDICT",
     title: "It predicts the next hour.",
     description:
-      "Occupancy and energy models identify the opportunity before waste continues, verifying that no reservation is scheduled for the next 78 minutes.",
-    badge: "ML Forecast Engine",
+      "Occupancy and energy models catch the opportunity early. The room will stay empty for 78 minutes, so cooling can safely ease back.",
+    badge: "MODELLED FORECAST",
     visualType: "predict",
     metrics: [
       { label: "Forecasted Vacancy", value: "78 mins", hint: "Until 15:30 reservation" },

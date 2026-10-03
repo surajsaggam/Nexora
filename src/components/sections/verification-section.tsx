@@ -22,10 +22,10 @@ export function VerificationSection() {
             </span>
           </div>
           <h2 className="text-3xl sm:text-5xl font-semibold tracking-[-0.02em] text-[#141413] dark:text-[#F4F1EE] mb-4">
-            Measured and verified. Never assumed.
+            Verified impact. Never assumed.
           </h2>
           <p className="text-base sm:text-lg text-[#6B6864] dark:text-[#A4A09B] leading-relaxed">
-            NEXORA does not just report estimated savings. Following international energy measurement protocols (IPMVP), every action is compared against real before-and-after meter readings to prove actual kilowatt and rupee reductions.
+            NEXORA does not just report estimated savings. Following international energy measurement protocols (IPMVP), every action is verified against before-and-after meter readings to demonstrate genuine kilowatt and cost reductions.
           </p>
         </div>
 

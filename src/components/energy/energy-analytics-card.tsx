@@ -32,11 +32,11 @@ export function EnergyAnalyticsCard() {
               24-Hour Energy Telemetry vs Expected Baseline
             </h3>
             <span className="text-[10px] font-mono uppercase px-2 py-0.5 rounded-full bg-[#FAF8F5] dark:bg-[#2A2A28] border border-[#E0DBD4] dark:border-[#333330] text-[#6B6864] dark:text-[#A4A09B]">
-              EVIDENCE: MEASURED + SIMULATED INTERVENTION
+              EVIDENCE: SIMULATED BASELINE + INTERVENTION
             </span>
           </div>
           <p className="text-xs text-[#6B6864] dark:text-[#A4A09B] mt-0.5">
-            Smart-meter demand profile comparing machine-learned baseline with real-time zone telemetry. Shaded zone marks 11:00–15:00 peak tariff window.
+            Smart-meter demand profile comparing trained baseline with simulated zone telemetry. Shaded zone marks 11:00–15:00 peak tariff window.
           </p>
         </div>
 

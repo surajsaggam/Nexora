@@ -4,6 +4,7 @@ import React from "react";
 import { Sliders, Eye, Sparkles, CheckCircle2, RotateCcw, ShieldCheck, Activity, Layers } from "lucide-react";
 import { useNexora } from "@/hooks/use-nexora";
 import { OperatingMode } from "@/types/nexora";
+import { NexoraLogo } from "@/components/ui/nexora-logo";
 
 interface ControlSummarySectionProps {
   onOpenOverride: () => void;
@@ -175,10 +176,13 @@ export function ControlSummarySection({
 
         {/* Compliance & Standards Badges Footer */}
         <div className="pt-8 border-t border-[#E0DBD4] dark:border-[#333330] flex flex-col sm:flex-row items-center justify-between gap-4 text-xs font-mono text-[#6B6864] dark:text-[#A4A09B]">
-          <div className="flex items-center gap-6">
-            <span>BACnet/IP &bull; Modbus TCP &bull; MQTT</span>
-            <span>ASHRAE 55 &bull; ASHRAE 62.1</span>
-            <span>IPMVP Option C</span>
+          <div className="flex items-center gap-4">
+            <NexoraLogo size="sm" variant="mark" />
+            <div className="flex flex-wrap items-center gap-4 sm:gap-6">
+              <span>BACnet/IP &bull; Modbus TCP &bull; MQTT</span>
+              <span>ASHRAE 55 &bull; 62.1</span>
+              <span>IPMVP Option C</span>
+            </div>
           </div>
           <div className="flex items-center gap-2">
             <span className="size-2 rounded-full bg-[#15803D]" />

@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
+import { motion } from "framer-motion";
 import {
   Radio,
   Cpu,
@@ -117,7 +118,13 @@ export function LoopSection() {
         </div>
 
         {/* Componentry CircuitBoard Container */}
-        <div className="bg-white dark:bg-[#1D1D1B] border border-[#E0DBD4] dark:border-[#333330] rounded-3xl p-6 sm:p-10 shadow-sm">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true, margin: "-50px" }}
+          transition={{ duration: 0.7, ease: [0.2, 0, 0, 1] }}
+          className="bg-white dark:bg-[#1D1D1B] border border-[#E0DBD4] dark:border-[#333330] rounded-3xl p-6 sm:p-10 shadow-sm"
+        >
           <div className="flex items-center justify-between pb-4 border-b border-[#E0DBD4] dark:border-[#333330] mb-6 text-xs text-[#6B6864] dark:text-[#A4A09B]">
             <div className="flex items-center gap-2">
               <span className="size-2 rounded-full bg-[#15803D] animate-pulse" />
@@ -136,7 +143,7 @@ export function LoopSection() {
             activeNodeId={selectedNodeId}
             onSelectNode={setSelectedNodeId}
           />
-        </div>
+        </motion.div>
       </div>
     </section>
   );
