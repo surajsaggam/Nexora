@@ -30,9 +30,12 @@ function DrawerForm({ zone, onClose }: { zone: ZoneData; onClose: () => void }) 
   };
 
   return (
-    <div className="bg-white dark:bg-[#1D1D1B] border border-[#E0DBD4] dark:border-[#333330] rounded-3xl p-6 max-w-lg w-full shadow-2xl animate-in fade-in zoom-in-95 duration-200">
+    <div
+      onClick={(e) => e.stopPropagation()}
+      className="relative bg-white dark:bg-[#1D1D1B] border border-[#E0DBD4] dark:border-[#333330] rounded-3xl p-5 sm:p-6 max-w-lg w-full shadow-2xl animate-in fade-in zoom-in-95 duration-200 flex flex-col max-h-[calc(100dvh-2rem)] sm:max-h-[88vh] my-auto overflow-hidden"
+    >
       {/* Drawer Header */}
-      <div className="flex items-center justify-between pb-3 border-b border-[#E0DBD4] dark:border-[#333330] mb-4">
+      <div className="flex items-center justify-between pb-3 border-b border-[#E0DBD4] dark:border-[#333330] mb-3 shrink-0">
         <div className="flex items-center gap-2.5">
           <div className="size-9 rounded-full bg-[#141413] text-[#F4F1EE] flex items-center justify-center">
             <Sliders className="size-4" />
@@ -48,21 +51,21 @@ function DrawerForm({ zone, onClose }: { zone: ZoneData; onClose: () => void }) 
         </div>
         <button
           onClick={onClose}
-          className="p-1.5 rounded-full hover:bg-[#EAE6E1] dark:hover:bg-[#2A2A28] text-[#6B6864] transition-colors btn-press"
+          className="p-1.5 rounded-full hover:bg-[#EAE6E1] dark:hover:bg-[#2A2A28] text-[#6B6864] transition-colors btn-press cursor-pointer"
         >
           <X className="size-4" />
         </button>
       </div>
 
-      {/* Warning Callout */}
-      <div className="p-3 rounded-xl bg-[#C05621]/10 border border-[#C05621]/30 text-xs text-[#C05621] flex items-start gap-2 mb-4 leading-snug">
-        <AlertTriangle className="size-4 shrink-0 mt-0.5" />
-        <span>
-          Manual override takes precedence over AI automated optimization. Physical commands will be dispatched via edge gateway over BACnet MSTP.
-        </span>
-      </div>
-
-      {/* Form Controls */}
+      {/* Scrollable Form Body */}
+      <div className="overflow-y-auto flex-1 pr-1.5 -mr-1 space-y-4 overscroll-contain">
+        {/* Warning Callout */}
+        <div className="p-3 rounded-xl bg-[#C05621]/10 border border-[#C05621]/30 text-xs text-[#C05621] flex items-start gap-2 leading-snug">
+          <AlertTriangle className="size-4 shrink-0 mt-0.5" />
+          <span>
+            Manual override takes precedence over AI automated optimization. Physical commands will be dispatched via edge gateway over BACnet MSTP.
+          </span>
+        </div>
       <div className="space-y-4 mb-6">
         {/* Temperature Setpoint Slider */}
         <div className="bg-[#FAF8F5] dark:bg-[#242422] p-3.5 rounded-2xl border border-[#E0DBD4] dark:border-[#333330]">
@@ -141,13 +144,14 @@ function DrawerForm({ zone, onClose }: { zone: ZoneData; onClose: () => void }) 
           </div>
         </div>
       </div>
+    </div>
 
-      {/* Footer Actions */}
-      <div className="flex items-center justify-between gap-3 pt-3 border-t border-[#E0DBD4] dark:border-[#333330]">
+    {/* Footer Actions — pinned */}
+      <div className="flex items-center justify-between gap-3 pt-3 mt-3 border-t border-[#E0DBD4] dark:border-[#333330] shrink-0">
         {zone.isManualOverride ? (
           <button
             onClick={handleRelease}
-            className="px-4 py-2 rounded-full text-xs font-semibold border border-[#E0DBD4] dark:border-[#333330] hover:bg-[#EAE6E1] dark:hover:bg-[#2A2A28] text-[#C05621] transition-colors btn-press flex items-center gap-1.5"
+            className="px-4 py-2 rounded-full text-xs font-semibold border border-[#E0DBD4] dark:border-[#333330] hover:bg-[#EAE6E1] dark:hover:bg-[#2A2A28] text-[#C05621] transition-colors btn-press flex items-center gap-1.5 cursor-pointer"
           >
             <RotateCcw className="size-3" />
             <span>Release to Auto BMS</span>
@@ -161,13 +165,13 @@ function DrawerForm({ zone, onClose }: { zone: ZoneData; onClose: () => void }) 
         <div className="flex items-center gap-2">
           <button
             onClick={onClose}
-            className="px-4 py-2 rounded-full text-xs font-semibold border border-[#E0DBD4] dark:border-[#333330] hover:bg-[#EAE6E1] dark:hover:bg-[#2A2A28] text-[#6B6864] transition-colors btn-press"
+            className="px-4 py-2 rounded-full text-xs font-semibold border border-[#E0DBD4] dark:border-[#333330] hover:bg-[#EAE6E1] dark:hover:bg-[#2A2A28] text-[#6B6864] transition-colors btn-press cursor-pointer"
           >
             Cancel
           </button>
           <button
             onClick={handleApply}
-            className="px-5 py-2 rounded-full text-xs font-bold bg-[#141413] text-[#F4F1EE] dark:bg-[#F4F1EE] dark:text-[#141413] hover:opacity-90 transition-all shadow-sm btn-press"
+            className="px-5 py-2 rounded-full text-xs font-bold bg-[#141413] text-[#F4F1EE] dark:bg-[#F4F1EE] dark:text-[#141413] hover:opacity-90 transition-all shadow-sm btn-press cursor-pointer"
           >
             Apply Override
           </button>
@@ -178,10 +182,29 @@ function DrawerForm({ zone, onClose }: { zone: ZoneData; onClose: () => void }) 
 }
 
 export function ManualOverrideDrawer({ zone, onClose }: Props) {
+  React.useEffect(() => {
+    if (!zone) return;
+    const originalOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") onClose();
+    };
+    window.addEventListener("keydown", handleKeyDown);
+
+    return () => {
+      document.body.style.overflow = originalOverflow;
+      window.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [zone, onClose]);
+
   if (!zone) return null;
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/40 backdrop-blur-sm flex items-center justify-center p-4">
+    <div
+      onClick={onClose}
+      className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4 overflow-y-auto"
+    >
       <DrawerForm key={zone.id} zone={zone} onClose={onClose} />
     </div>
   );

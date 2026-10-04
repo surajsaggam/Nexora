@@ -1,36 +1,338 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# NEXORA — Retrofit-First Building Intelligence Platform
 
-## Getting Started
+> **Yuva Yodha Tech Challenge 2026** &bull; **Problem Statement 02: Smart Buildings**  
+> *"Data alone does not save energy. Decisions do."*
 
-First, run the development server:
+[![Next.js 16](https://img.shields.io/badge/Next.js-16.3.8-black?style=flat-square&logo=next.js)](https://nextjs.org/)
+[![FastAPI](https://img.shields.io/badge/FastAPI-1.0.0-009688?style=flat-square&logo=fastapi)](https://fastapi.tiangolo.com/)
+[![Python](https://img.shields.io/badge/Python-3.10%2B-blue?style=flat-square&logo=python)](https://python.org/)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5.0%2B-3178C6?style=flat-square&logo=typescript)](https://www.typescriptlang.org/)
+[![Pytest](https://img.shields.io/badge/Tests-76%20Passed-15803D?style=flat-square&logo=pytest)](https://pytest.org/)
+[![Standards](https://img.shields.io/badge/Standards-ASHRAE%2055%20%7C%2062.1%20%7C%20IPMVP-C05621?style=flat-square)]()
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+---
+
+## 1. Executive Summary
+
+Commercial buildings consume approximately **40% of global electricity**, with heating, ventilation, and air-conditioning (HVAC) and lighting representing more than **60% of whole-building load**. In standard operations, **over 30% of this energy is completely wasted**—conditioning and illuminating empty meeting rooms, operating at static setpoints regardless of weather, and triggering costly utility peak-demand penalties.
+
+Existing Building Management Systems (BMS) are rigid: replacing them requires millions of dollars in capital expenditure, proprietary hardware lock-in, and months of disruption.
+
+**NEXORA** is a **retrofit-first Building Intelligence Platform** that acts as an intelligence, safety, and verification overlay on top of existing building infrastructure (BACnet/IP, Modbus, MQTT). NEXORA does not rip out the existing BMS. Instead, it continuously ingests telemetry, models thermodynamic building physics, predicts waste, evaluates what-if actions, subjects every proposal to strict multi-tier safety gating, executes approved setpoint trims, and rigorously verifies real kilowatt reduction using **IPMVP Option C** standards.
+
+---
+
+## 2. The Core Closed Loop
+
+NEXORA operates on an autonomous closed-loop intelligence architecture:
+
+```
+  ┌─────────┐      ┌────────────┐      ┌─────────┐      ┌────────┐
+  │  SENSE  │ ───► │ UNDERSTAND │ ───► │ PREDICT │ ───► │ DECIDE │
+  └─────────┘      └────────────┘      └─────────┘      └────────┘
+                                                             │
+  ┌─────────┐      ┌────────────┐      ┌─────────┐           ▼
+  │  LEARN  │ ◄─── │   VERIFY   │ ◄─── │   ACT   │ ◄─── ┌────────┐
+  └─────────┘      └────────────┘      └─────────┘      │  GATE  │
+                                                        └────────┘
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+1. **SENSE**: Edge gateways stream sub-metered power (kW), indoor temperature (°C), CO₂ (ppm), relative humidity (%), and occupancy state across all zones in real-time.
+2. **UNDERSTAND**: EWMA baselining and Isolation Forest anomaly models separate expected operational variance from genuine cooling/lighting waste.
+3. **PREDICT**: A calibrated **1R1C Equivalent Thermal Parameter (ETP)** physics network simulates thermodynamic heat transfer:
+   $$\ C \frac{dT}{dt} = \frac{T_{\text{amb}} - T_{\text{zone}}}{R} + Q_{\text{occupants}} + Q_{\text{solar}} + Q_{\text{HVAC}}\ $$
+   predicting zone temperature trajectories, humidity, and chiller COP under candidate actions over 45–120 minute horizons.
+4. **DECIDE**: The Decision Engine generates candidate energy-efficiency actions (e.g., `HVAC_SETBACK`, `HVAC_SETBACK_LIGHTING_DIM`), calculating forecasted kilowatt drop and tenant impact.
+5. **GATE**: A strict **5-Tier Safety Constraint Gate** evaluates every candidate action before execution. If comfort, indoor air quality, equipment safety, room policy, or model confidence is violated, the action is **hard-rejected**.
+6. **ACT**: For actions passing the gate and authorized by policy (or approved by a facility manager), the **Control Executor** dispatches setpoint trims via BACnet/IP edge commands.
+7. **VERIFY**: Following execution, telemetry is read back and evaluated by an **IPMVP Option C** Measurement & Verification engine, quantifying actual kilowatt savings against counterfactual baseline regressions.
+8. **LEARN**: Observed physical responses update zone thermal capacitance ($C$), resistance ($R$), and occupancy transition probabilities for continuous system refinement.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+---
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## 3. NEXORA Evidence Discipline
 
-## Learn More
+In commercial building operations, trust is paramount. NEXORA enforces strict evidence categorization across every API endpoint and UI component:
 
-To learn more about Next.js, take a look at the following resources:
+| Evidence Tier | Definition | Example in Platform |
+| :--- | :--- | :--- |
+| <kbd>MEASURED</kbd> | Telemetry collected directly from physical/simulated sensors. | Room temp: `21.2°C`, CO₂: `440 ppm`, Active Power: `42.8 kW` |
+| <kbd>SIMULATED</kbd> | Data generated by thermodynamic models or scenario evaluators. | Peak demand response: `-6.8 kW`, Thermal drift: `+1.8°C in 45m` |
+| <kbd>ASSUMED</kbd> | Planning baselines, schedule rules, and design ratings. | Max comfort limit: `25.5°C`, Anti-cycling lockout: `15 mins` |
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+> [!NOTE]
+> NEXORA never presents simulated results as measured building data. All claims of savings are backed by deterministic verification.
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+---
 
-## Deploy on Vercel
+## 4. System Architecture
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+NEXORA combines a high-performance Python FastAPI intelligence engine with an editorial, desktop-first Next.js web application:
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+```
+┌────────────────────────────────────────────────────────────────────────┐
+│                        NEXORA Web Application                          │
+│        (Next.js 16 App Router • React 19 • Tailwind CSS v4 • HeroUI)   │
+└───────────────────────────────────▲────────────────────────────────────┘
+                                    │ HTTP REST / JSON Client
+┌───────────────────────────────────▼────────────────────────────────────┐
+│                       FastAPI Integration Layer                        │
+│          /zones  •  /recommendations  •  /actions  •  /sim  •  /impact │
+└───────┬──────────────┬──────────────────┬─────────────────┬────────────┘
+        │              │                  │                 │
+┌───────▼────────┐ ┌───▼──────────┐ ┌─────▼──────────┐ ┌────▼────────────┐
+│ 1R1C Simulator │ │ ML Analytics │ │ Decision Engine│ │ Control & M&V   │
+│ • 8 Zones      │ │ • Isolation  │ │ • Candidate Gen│ │ • BMS Executor  │
+│ • Weather/COP  │ │   Forest     │ │ • 5-Tier Safety│ │ • IPMVP Option C│
+│ • BACnet state │ │ • EWMA Base  │ │   Gate         │ │ • CUSUM Savings │
+└────────────────┘ └──────────────┘ └────────────────┘ └─────────────────┘
+```
+
+### Repository Structure
+
+```text
+Nexora/
+├── backend/
+│   ├── api/                     # FastAPI application & REST route handlers
+│   │   ├── routes/              # /zones, /recommendations, /actions, /impact, /sim
+│   │   ├── main.py              # Application entrypoint & CORS configuration
+│   │   └── schemas.py           # Strict Pydantic v2 data models
+│   ├── control/                 # Simulated BMS execution & state tracking
+│   │   ├── executor.py          # Validates gate pass, dispatches setpoints, reads back
+│   │   └── state.py             # Active overrides & equipment operating modes
+│   ├── decision_engine/         # Optimization, what-if evaluation & safety gating
+│   │   ├── engine.py            # Closed-loop decision engine coordinator
+│   │   ├── safety_gate.py       # 5-Tier constraint check (Comfort, IAQ, Equipment, etc.)
+│   │   ├── candidates.py        # Rule & heuristic candidate action generator
+│   │   └── what_if.py           # Digital-twin thermal projection
+│   ├── ml/                      # Machine learning intelligence service
+│   │   ├── service.py           # Predictive coordinator
+│   │   ├── baseline.py          # EWMA & multi-variable regression baseline
+│   │   ├── anomaly.py           # Isolation Forest anomaly detection
+│   │   └── occupancy.py         # Occupancy pattern inference & transition modeling
+│   ├── simulation/              # Peak-demand & demand-response simulator
+│   │   └── peak_event.py        # Grid stress scenario simulator (target kW cap)
+│   ├── simulator/               # Multi-zone building physics simulator
+│   │   ├── engine.py            # Physics loop & state transitions
+│   │   ├── physics.py           # 1R1C thermal differential equations
+│   │   ├── config.py            # Zone parameters, floor areas, BACnet addresses
+│   │   └── weather.py           # Diurnal solar & ambient temperature models
+│   ├── verification/            # Measurement & Verification (M&V)
+│   │   └── mv_engine.py         # IPMVP Option C baseline regression & savings verification
+│   └── tests/                   # 76 automated backend tests (100% passing)
+│
+├── src/
+│   ├── app/                     # Next.js App Router (page.tsx, layout.tsx, globals.css)
+│   ├── components/
+│   │   ├── digital-twin/        # What-If scenario evaluator & peak-event controls
+│   │   ├── controls/            # Facility manager manual override drawer
+│   │   ├── zones/               # Floor 4: 8-zone deep telemetry inspection modal
+│   │   ├── sections/            # Editorial story sections (Hero, Loop, Energy, Safety, M&V)
+│   │   └── ui/                  # Reusable accessible component primitives
+│   ├── hooks/                   # useNexora React state management hook
+│   └── lib/api/                 # Type-safe API client connecting to FastAPI
+```
+
+---
+
+## 5. Key Platform Capabilities
+
+### 🏢 1. Instrumented Facility: Apex Horizon Complex (Floor 4)
+Monitors **1,000 m²** of conditioned commercial space split into **8 distinct functional zones**:
+- **Z01 (180 m²)**: Open Workspace North — High density flexible desks.
+- **Z02 (220 m²)**: Open Workspace South — High solar gain perimeter zone.
+- **Z03 (90 m²)**: Executive Boardroom — High-priority executive space with policy locks.
+- **Z04 (110 m²)**: Conference Suite B — *Primary Demo Zone* (vacated 42m early).
+- **Z05 (140 m²)**: Engineering Labs — Strict thermal stability envelope.
+- **Z06 (120 m²)**: Cafeteria & Breakout — High occupancy fluctuation & ventilation demand.
+- **Z07 (60 m²)**: Restrooms & Core — Fixed baseline ventilation zone.
+- **Z08 (80 m²)**: Server & Network Hub — **Protected Critical Zone** (locked against setbacks).
+
+### ⚡ 2. Real-Time Waste Detection & Live Advisory
+In the primary demo scenario, Conference Suite B is vacated 42 minutes before its scheduled end time. NEXORA’s ML service detects the vacancy anomaly, forecasts that the space will remain empty until the next scheduled meeting, and generates an immediate optimization advisory:
+- **Action**: `HVAC_SETBACK_LIGHTING_DIM`
+- **Intervention**: Setpoint relaxed from 21.2°C to 24.5°C; lighting dimmed to 30%.
+- **Forecasted Impact**: **-3.8 kW** instantaneous demand reduction (~18% cooling load savings).
+- **Model Confidence**: **94.6%** based on 90 days of sensor training history.
+
+### 🛡️ 3. The 5-Tier Safety Constraint Gate
+NEXORA never implies unrestricted AI control over the building. Every action is gated against 5 hard checks:
+1. **Thermal Comfort Check**: Ensures zone temperature will not exceed ASHRAE 55 boundaries (Max 25.5°C for summer comfort).
+2. **Indoor Air Quality (IAQ) Check**: Verifies fresh-air dampers remain open to keep CO₂ strictly under 950 ppm (ASHRAE 62.1).
+3. **Compressor Anti-Cycling Check**: Enforces a minimum 15-minute compressor lockout to protect chiller motors from premature mechanical failure.
+4. **Operating Rule & Criticality Check**: Protects mission-critical zones (e.g., Z08 Server Room cannot be setback) and honors executive VIP locks.
+5. **Model Confidence Gate**: Requires $\ge 85\%$ predictive confidence before allowing automated dispatch.
+
+### 🤝 4. Human-in-the-Loop Governance
+Facility operators retain full operational control through 4 selectable operating modes in the stadium header:
+- **MONITOR**: Ingests and visualizes telemetry only; no recommendations generated.
+- **RECOMMEND**: Generates recommendations and projects impact without executing.
+- **APPROVE**: Human-in-the-loop requirement—actions must be explicitly approved by an operator.
+- **AUTOMATE**: Pre-authorized safe actions (passing all 5 safety gates with >90% confidence) are auto-dispatched.
+- **Instant Manual Override**: An operator can override any individual zone setpoint, lighting level, or operating mode at any time, instantly revoking AI automation for that zone.
+
+### 📉 5. Grid Peak Event & Demand Response Simulation
+Under extreme grid stress (e.g., 39°C heatwave or utility demand-response signal), NEXORA demonstrates automated peak limiting:
+- Sets a hard target demand cap (e.g. **60.0 kW**).
+- Automatically identifies flexible shedding zones while strictly shielding protected zones (Server Hub).
+- Dispatches coordinated setbacks to reduce peak load by **-6.8 kW** within minutes, preventing heavy utility demand penalties.
+
+### 🔬 6. IPMVP Option C Measurement & Verification (M&V)
+NEXORA proves savings instead of assuming them:
+- Compares measured post-action meter readings against counterfactual baseline regression models.
+- Demonstrates the verified drop: **42.8 kW (before) ➔ 39.0 kW (after)** = **-3.8 kW verified**.
+- Calculates cumulative savings tracking ($) and carbon avoided (kg CO₂e).
+
+---
+
+## 6. Quickstart Guide (Local Setup)
+
+Both the backend and frontend can be started locally in less than 2 minutes.
+
+### Prerequisites
+- **Node.js**: v18.0.0 or higher
+- **Python**: v3.10 or higher
+- **Git**
+
+---
+
+### Step 1: Start the FastAPI Intelligence Backend
+
+Open a terminal and navigate to the project directory:
+
+```bash
+# 1. (Optional) Create and activate a Python virtual environment
+python -m venv venv
+# Windows (PowerShell):
+.\venv\Scripts\Activate.ps1
+# macOS/Linux:
+source venv/bin/activate
+
+# 2. Install backend dependencies
+pip install -r requirements.txt
+
+# 3. Start the FastAPI development server on port 8000
+python -m uvicorn backend.api.main:app --port 8000 --reload
+```
+
+The backend is now live:
+- **API Base**: `http://localhost:8000`
+- **Interactive Swagger Docs**: `http://localhost:8000/docs`
+- **Health Check**: `http://localhost:8000/health`
+
+---
+
+### Step 2: Start the Next.js Frontend
+
+Open a second terminal in the project root:
+
+```bash
+# 1. Install frontend dependencies
+npm install
+
+# 2. Start Next.js development server
+npm run dev
+```
+
+Open your browser and navigate to:
+👉 **`http://localhost:3000`**
+
+---
+
+## 7. Running the Test Suites
+
+### Backend Unit & Integration Tests (76 Tests)
+
+Run the complete Pytest suite covering physics, ML, decision logic, safety gating, control, peak-events, and FastAPI routes:
+
+```bash
+pytest backend -v
+```
+
+**Result:**
+```text
+============================= test session starts =============================
+collected 76 items
+
+backend/control/tests/test_control.py ........                           [ 10%]
+backend/simulation/tests/test_peak_event.py ...........                  [ 25%]
+backend/tests/test_api.py ............                                   [ 40%]
+backend/tests/test_control_and_verification.py ..........                [ 53%]
+backend/tests/test_decision_engine.py .........                          [ 65%]
+backend/tests/test_ml.py ......                                          [ 73%]
+backend/tests/test_simulation_peak_event.py .....                        [ 80%]
+backend/tests/test_simulator.py .........                                [ 92%]
+backend/verification/tests/test_verification.py ......                   [100%]
+
+============================= 76 passed in 11.34s =============================
+```
+
+### Frontend Production Build Validation
+
+Verify TypeScript types and compile the optimized production bundle with Turbopack:
+
+```bash
+npm run build
+```
+
+**Result:**
+```text
+✓ Compiled successfully
+✓ Finished TypeScript in 7.1s
+✓ Generating static pages (5/5)
+```
+
+---
+
+## 8. Recommended Judges' Walkthrough Flow
+
+When reviewing NEXORA, follow this step-by-step evaluation path in the web UI:
+
+1. **Observe Building Telemetry (Top of Page)**:
+   - Notice the **Stadium Header** with live status indicator (`SIMULATED SENSORS`), operating modes (`Monitor`, `Recommend`, `Approve`, `Automate`), and active digital-twin scenario pill.
+   - Click **"Inspect 8 Zones"** to open the Floor 4 Telemetry Modal. Filter by *"All Zones"* or *"Attention"* to inspect BACnet readings for each zone.
+2. **Explore the Intelligence Architecture**:
+   - Scroll to Section 3 (**"How intelligence moves through the building"**).
+   - Experience the 3D **Scroll Split Card** demonstrating the architectural transition from physical building facade into the closed-loop intelligence phases.
+3. **Analyze Energy Telemetry & Cooling Breakdown**:
+   - Scroll to the **Energy Demand vs. What Was Expected** section.
+   - Toggle *"Hide/Show Cooling Breakdown"* to observe the delta between the fixed baseline schedule and the curtailed cooling curve.
+4. **Approve a Live AI Recommendation**:
+   - In Section 6 (**"A Live Recommendation: Conference Suite B"**), review the detected early meeting vacancy.
+   - Click **"Approve & Execute Setback"**.
+   - Notice the state transitions through approval, dispatching to the simulated BMS, and instant telemetry read-back.
+5. **Inspect the 5-Tier Safety Constraint Gate**:
+   - Examine the 5 cards in Section 7 explaining *why* the action was certified as safe (Comfort, IAQ, Compressor, Room Policy, Model Confidence).
+6. **Verify the Savings in the M&V Section**:
+   - View Section 8 (**"Measurement & Verification"**) to verify the before/after drop (**42.8 kW ➔ 39.0 kW**) and the IPMVP Option C verification badge.
+7. **Simulate a Grid Peak Event**:
+   - Click the **Scenario Pill** in the top header (`Standard Workday Baseline`).
+   - In the **Digital Twin: What-If Scenario Evaluator**, select **"Extreme Summer Grid Peak (39°C)"**.
+   - Observe the live demand response banner activate, capping load at 60 kW and shedding 6.8 kW while keeping comfort boundaries fully intact.
+8. **Test Facility Manager Manual Override**:
+   - Click **"Manual Override"** in the footer CTA or zone inspection card.
+   - Adjust the temperature slider or lighting level to demonstrate instant operator supremacy over AI control.
+
+---
+
+## 9. Technology Stack
+
+| Domain | Technologies & Libraries |
+| :--- | :--- |
+| **Frontend Framework** | [Next.js 16 (App Router)](https://nextjs.org/) &bull; [React 19](https://react.dev/) &bull; [Turbopack](https://turbo.build/pack) |
+| **Styling & UI Tokens** | [Tailwind CSS v4](https://tailwindcss.com/) &bull; [HeroUI](https://heroui.com/) &bull; [shadcn/ui](https://ui.shadcn.com/) |
+| **Icons & Visualization** | [Lucide React](https://lucide.dev/) &bull; [Recharts](https://recharts.org/) |
+| **Motion & Micro-interactions** | [Framer Motion](https://www.framer.com/motion/) |
+| **Backend API** | [FastAPI](https://fastapi.tiangolo.com/) &bull; [Uvicorn](https://www.uvicorn.org/) &bull; [Pydantic v2](https://docs.pydantic.dev/) |
+| **Thermodynamic Modeling** | NumPy &bull; 1R1C Thermal Differential Simulation &bull; Chiller COP Curve |
+| **Machine Learning** | scikit-learn (Isolation Forest) &bull; EWMA Baseline Regression |
+| **Standards Compliance** | ASHRAE 55 (Thermal Comfort) &bull; ASHRAE 62.1 (Ventilation/IAQ) &bull; IPMVP Option C (M&V) |
+| **Test Framework** | [Pytest](https://pytest.org/) (76 passing tests) |
+
+---
+
+## 10. Conclusion
+
+NEXORA addresses the core reality of modern commercial real estate: **buildings already have systems, but they lack a unified brain.** By providing an intelligent, retrofit-first software layer that respects physical building constraints and operator oversight, NEXORA delivers immediate energy savings, eliminates peak penalties, and safeguards occupant comfort without the risk, cost, or downtime of hardware replacement.
+
+**Yuva Yodha Tech Challenge 2026**

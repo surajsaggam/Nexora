@@ -25,7 +25,7 @@ export default function Home() {
   const [isScenarioModalOpen, setIsScenarioModalOpen] = useState(false);
 
   return (
-    <div className="relative min-h-screen bg-[#F4F1EE] dark:bg-[#141413] text-[#141413] dark:text-[#F4F1EE] flex flex-col font-sans selection:bg-[#C05621]/20 selection:text-[#C05621]">
+    <div className="relative min-h-screen bg-[#F4F1EE] dark:bg-[#141413] text-[#141413] dark:text-[#F4F1EE] flex flex-col font-sans selection:bg-[#C05621]/20 selection:text-[#C05621] overflow-x-clip">
       {/* 1. Page-level persistent geometric background at z-0 inside visible stacking context */}
       <div className="pointer-events-none fixed inset-0 z-0 overflow-hidden">
         <GeometricBackground

@@ -69,9 +69,31 @@ export function ZoneInspectionModal({
     setExpandedZoneId((prev) => (prev === id ? null : id));
   };
 
+  React.useEffect(() => {
+    if (!isOpen) return;
+    const originalOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") onClose();
+    };
+    window.addEventListener("keydown", handleKeyDown);
+
+    return () => {
+      document.body.style.overflow = originalOverflow;
+      window.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [isOpen, onClose]);
+
   return (
-    <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-md flex items-center justify-center p-3 sm:p-6 overflow-y-auto">
-      <div className="bg-[#FAF8F5] dark:bg-[#191918] border border-[#E0DBD4] dark:border-[#333330] rounded-[32px] sm:rounded-[36px] p-6 sm:p-8 max-w-5xl w-full shadow-2xl my-6 flex flex-col max-h-[92vh]">
+    <div
+      onClick={onClose}
+      className="fixed inset-0 z-50 bg-black/60 backdrop-blur-md flex items-center justify-center p-3 sm:p-6 overflow-y-auto"
+    >
+      <div
+        onClick={(e) => e.stopPropagation()}
+        className="bg-[#FAF8F5] dark:bg-[#191918] border border-[#E0DBD4] dark:border-[#333330] rounded-[32px] sm:rounded-[36px] p-6 sm:p-8 max-w-5xl w-full shadow-2xl my-auto flex flex-col max-h-[calc(100dvh-2rem)] sm:max-h-[90vh] overflow-hidden"
+      >
         {/* Modal Header — Editorial, Calm, Clear */}
         <div className="flex items-start justify-between pb-6 border-b border-[#E0DBD4] dark:border-[#333330] shrink-0">
           <div>
@@ -148,7 +170,7 @@ export function ZoneInspectionModal({
         </div>
 
         {/* Scrollable Zone List with Breathing Room & Progressive Disclosure */}
-        <div className="overflow-y-auto py-4 space-y-3.5 pr-1 flex-1">
+        <div className="overflow-y-auto py-4 space-y-3.5 pr-1 flex-1 overscroll-contain">
           {filteredZones.map((zone) => {
             const status = getZoneStatus(zone);
             const isExpanded = expandedZoneId === zone.id;

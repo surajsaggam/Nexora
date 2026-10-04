@@ -46,3 +46,10 @@ __pycache__/
 *$py.class
 .pytest_cache/
 *.parquet
+
+# markdown files (exclude all except README.md for judges review)
+*.md
+!README.md
+!**/README.md
+
+
